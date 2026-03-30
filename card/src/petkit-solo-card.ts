@@ -22,6 +22,7 @@ export class PetkitSoloCard extends LitElement {
   @property({ attribute: false }) private _config?: PetkitSoloCardConfig;
   private _pendingToggles: Map<string, boolean> = new Map();
   private _editingItem: { itemId: string; field: 'time' | 'name' | 'amount'; time: string; name: string; amount: number } | null = null;
+  private _originalItemData: { time: string; name: string; amount: number } | null = null;
   private _pendingNewItem: { itemId: string; time: string; name: string; amount: number } | null = null;
   private _deletedPlanItems: Set<string> = new Set();
   private _saveTimeout: number | null = null;
@@ -689,6 +690,11 @@ return html`
         name: this._pendingNewItem.name,
         amount: this._pendingNewItem.amount,
       };
+      this._originalItemData = {
+        time: this._pendingNewItem.time,
+        name: this._pendingNewItem.name,
+        amount: this._pendingNewItem.amount,
+      };
       this.requestUpdate();
       return;
     }
@@ -696,6 +702,11 @@ return html`
     this._editingItem = {
       itemId: item.itemId,
       field: field,
+      time: item.time,
+      name: item.name,
+      amount: item.plannedAmount,
+    };
+    this._originalItemData = {
       time: item.time,
       name: item.name,
       amount: item.plannedAmount,
@@ -731,6 +742,12 @@ return html`
       amount: 10,
     };
     
+    this._originalItemData = {
+      time: '00:00',
+      name: '早餐',
+      amount: 10,
+    };
+    
     console.log('[PetkitSoloCard] 新增计划:', newItemId);
     this.requestUpdate();
   }
@@ -754,16 +771,38 @@ return html`
   /** 执行待保存的修改 */
   private _doSavePendingChanges(): void {
     if (this._pendingNewItem && this._editingItem) {
+      const hasChanges = this._originalItemData && (
+        this._editingItem.time !== this._originalItemData.time ||
+        this._editingItem.name !== this._originalItemData.name ||
+        this._editingItem.amount !== this._originalItemData.amount
+      );
+      
       this._pendingNewItem.time = this._editingItem.time;
       this._pendingNewItem.name = this._editingItem.name;
       this._pendingNewItem.amount = this._editingItem.amount;
       
       this._editingItem = null;
-      this._saveNewItem();
+      this._originalItemData = null;
+      
+      if (hasChanges) {
+        this._saveNewItem();
+      }
     } else if (this._editingItem) {
       const editData = { ...this._editingItem };
+      const originalData = this._originalItemData;
+      
       this._editingItem = null;
-      this._updateExistingItem(editData);
+      this._originalItemData = null;
+      
+      const hasChanges = originalData && (
+        editData.time !== originalData.time ||
+        editData.name !== originalData.name ||
+        editData.amount !== originalData.amount
+      );
+      
+      if (hasChanges) {
+        this._updateExistingItem(editData);
+      }
     }
     
     this.requestUpdate();
@@ -802,6 +841,7 @@ return html`
   /** 操作：取消编辑 */
   private _cancelEdit(): void {
     this._editingItem = null;
+    this._originalItemData = null;
     this._pendingNewItem = null;
     if (this._saveTimeout) {
       clearTimeout(this._saveTimeout);

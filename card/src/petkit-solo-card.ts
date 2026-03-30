@@ -908,7 +908,7 @@ static styles = css`
       height: 36px;
       background: var(--primary-color, #03a9f4);
       color: white;
-      box-shadow: 0 2px 6px rgba(3, 169, 244, 0.4);
+      box-shadow: 0 0 0 1px rgba(3, 169, 244, 0.1), 0 0 8px 2px rgba(3, 169, 244, 0.3);
     }
     
     .feed-btn::before {
@@ -916,8 +916,7 @@ static styles = css`
     }
     
     .feed-btn:hover {
-      box-shadow: 0 3px 10px rgba(3, 169, 244, 0.5);
-      transform: translateY(-1px);
+      box-shadow: 0 0 0 1px rgba(3, 169, 244, 0.15), 0 0 12px 3px rgba(3, 169, 244, 0.4);
     }
     
     .feed-btn:active {

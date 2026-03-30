@@ -763,10 +763,40 @@ return html`
     } else if (this._editingItem) {
       const editData = { ...this._editingItem };
       this._editingItem = null;
-      console.log('[PetkitSoloCard] 编辑保存:', editData);
+      this._updateExistingItem(editData);
     }
     
     this.requestUpdate();
+  }
+  
+  private async _updateExistingItem(editData: { itemId: string; time: string; name: string; amount: number }): Promise<void> {
+    if (!this.hass) {
+      return;
+    }
+    
+    const day = new Date().getDay();
+    const weekday = day === 0 ? 7 : day;
+    
+    console.log('[PetkitSoloCard] 更新计划:', {
+      day: weekday,
+      item_id: editData.itemId,
+      time: editData.time,
+      amount: editData.amount,
+      name: editData.name,
+    });
+    
+    try {
+      await this.hass.callService('petkit_solo', 'update_feeding_item', {
+        day: weekday,
+        item_id: editData.itemId,
+        time: editData.time,
+        amount: editData.amount,
+        name: editData.name,
+      });
+      console.log('[PetkitSoloCard] 更新计划成功');
+    } catch (error) {
+      console.error('[PetkitSoloCard] 更新计划失败:', error);
+    }
   }
 
   /** 操作：取消编辑 */

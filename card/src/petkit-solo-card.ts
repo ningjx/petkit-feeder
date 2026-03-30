@@ -57,32 +57,6 @@ export class PetkitSoloCard extends LitElement {
     return true;
   }
 
-  protected firstUpdated(): void {
-    // 第 1 次渲染后计算名称列宽度
-    requestAnimationFrame(() => {
-      this._calculateNameWidth();
-      // 强制更新一次以应用新宽度
-      this.requestUpdate();
-    });
-  }
-
-  /** 计算名称列最佳宽度（按所有行中最窄的） */
-  private _calculateNameWidth() {
-    const nameElements = this.shadowRoot?.querySelectorAll('.name');
-    if (!nameElements || nameElements.length === 0) {
-      return;
-    }
-    
-    const widths = Array.from(nameElements).map((el: Element) => {
-      const rect = (el as HTMLElement).getBoundingClientRect();
-      return rect.width;
-    });
-    
-    const minWidth = Math.min(...widths);
-    const finalWidth = Math.max(minWidth, 50);
-    this.style.setProperty('--name-width', `${finalWidth}px`);
-  }
-
   protected render() {
     if (!this._config || !this.hass) {
       return html`<div>加载中...</div>`;
@@ -839,7 +813,6 @@ return html`
 static styles = css`
     :host {
       display: block;
-      max-width: 340px;
     }
     
     ha-card {
@@ -984,8 +957,7 @@ static styles = css`
     }
     
     .item-row {
-      display: grid;
-      grid-template-columns: 55px var(--name-width, 1fr) 40px auto auto;
+      display: flex;
       align-items: center;
       gap: 8px;
       margin-bottom: 0;
@@ -995,7 +967,8 @@ static styles = css`
       font-weight: bold;
       font-size: 12px;
       color: var(--primary-text-color);
-      min-width: 55px;
+      flex-shrink: 0;
+      width: 55px;
     }
     
     .name {
@@ -1004,14 +977,25 @@ static styles = css`
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      flex: 1 1 auto;
+      min-width: 14px;
     }
     
     .amount {
       font-weight: bold;
       font-size: 11px;
       color: var(--primary-color);
-      min-width: 40px;
+      flex-shrink: 0;
+      width: 40px;
       text-align: center;
+    }
+    
+    .status-icon {
+      flex-shrink: 0;
+    }
+    
+    .item-actions {
+      flex-shrink: 0;
     }
     
     .time.editable, .name.editable, .amount.editable {
@@ -1101,8 +1085,8 @@ static styles = css`
     }
     
     .edit-name {
-      flex: 1;
-      min-width: 60px;
+      flex: 1 1 auto;
+      min-width: 14px;
     }
     
     .edit-amount {

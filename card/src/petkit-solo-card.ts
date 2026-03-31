@@ -787,6 +787,14 @@ return html`
       return;
     }
     
+    if (relatedTarget && (
+      relatedTarget.classList.contains('edit-time') ||
+      relatedTarget.classList.contains('edit-name') ||
+      relatedTarget.classList.contains('edit-amount')
+    )) {
+      return;
+    }
+    
     if (this._saveTimeout) {
       clearTimeout(this._saveTimeout);
     }
@@ -798,6 +806,15 @@ return html`
 
   /** 执行待保存的修改 */
   private _doSavePendingChanges(): void {
+    const activeEl = document.activeElement;
+    if (activeEl && (
+      activeEl.classList.contains('edit-time') ||
+      activeEl.classList.contains('edit-name') ||
+      activeEl.classList.contains('edit-amount')
+    )) {
+      return;
+    }
+    
     if (!this._editingItem) {
       return;
     }

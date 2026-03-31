@@ -120,8 +120,8 @@ build_frontend() {
     log_info "执行构建..."
     npm run build
     
-    if [ -f "$CARD_DIST_DIR/petkit-solo-card.js" ]; then
-        local size=$(du -h "$CARD_DIST_DIR/petkit-solo-card.js" | cut -f1)
+    if [ -f "$CARD_DIST_DIR/petkit-feeder-card.js" ]; then
+        local size=$(du -h "$CARD_DIST_DIR/petkit-feeder-card.js" | cut -f1)
         log_success "前端构建完成 ($size)"
         return 0
     else
@@ -138,15 +138,15 @@ copy_card() {
     
     mkdir -p "$WWW_DIR"
     
-    if [ ! -f "$CARD_DIST_DIR/petkit-solo-card.js" ]; then
+    if [ ! -f "$CARD_DIST_DIR/petkit-feeder-card.js" ]; then
         log_error "前端卡片不存在，请先构建：$0 build"
         return 1
     fi
     
-    cp "$CARD_DIST_DIR/petkit-solo-card.js" "$WWW_DIR/" 2>/dev/null || \
-    sudo cp "$CARD_DIST_DIR/petkit-solo-card.js" "$WWW_DIR/"
+    cp "$CARD_DIST_DIR/petkit-feeder-card.js" "$WWW_DIR/" 2>/dev/null || \
+    sudo cp "$CARD_DIST_DIR/petkit-feeder-card.js" "$WWW_DIR/"
     
-    local size=$(du -h "$WWW_DIR/petkit-solo-card.js" | cut -f1)
+    local size=$(du -h "$WWW_DIR/petkit-feeder-card.js" | cut -f1)
     log_success "前端卡片已复制到 $WWW_DIR ($size)"
     return 0
 }
@@ -319,9 +319,9 @@ show_status() {
     
     # 前端状态
     log_info "前端卡片:"
-    if [ -f "$CARD_DIST_DIR/petkit-solo-card.js" ]; then
-        local size=$(du -h "$CARD_DIST_DIR/petkit-solo-card.js" | cut -f1)
-        local mtime=$(stat -c %y "$CARD_DIST_DIR/petkit-solo-card.js" 2>/dev/null | cut -d. -f1)
+    if [ -f "$CARD_DIST_DIR/petkit-feeder-card.js" ]; then
+        local size=$(du -h "$CARD_DIST_DIR/petkit-feeder-card.js" | cut -f1)
+        local mtime=$(stat -c %y "$CARD_DIST_DIR/petkit-feeder-card.js" 2>/dev/null | cut -d. -f1)
         echo "  ✅ 已构建 ($size, $mtime)"
     else
         echo "  ❌ 未构建"
@@ -344,8 +344,8 @@ show_status() {
     fi
     
     # 前端卡片
-    if [ -f "$WWW_DIR/petkit-solo-card.js" ]; then
-        local size=$(du -h "$WWW_DIR/petkit-solo-card.js" | cut -f1)
+    if [ -f "$WWW_DIR/petkit-feeder-card.js" ]; then
+        local size=$(du -h "$WWW_DIR/petkit-feeder-card.js" | cut -f1)
         echo "  ✅ 前端卡片已复制 ($size)"
     else
         echo "  ❌ 前端卡片未复制"

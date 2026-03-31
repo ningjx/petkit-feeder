@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "配置小佩 SOLO 喂食器",
+        "title": "配置小佩喂食器",
         "description": "请输入您的小佩账号信息",
         "data": {
           "username": "账号（手机号/邮箱）",
@@ -43,6 +43,9 @@
     "sensor": {
       "device_name": {
         "name": "设备名称"
+      },
+      "device_id": {
+        "name": "设备ID"
       },
       "food_level": {
         "name": "粮量"

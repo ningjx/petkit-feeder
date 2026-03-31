@@ -1,8 +1,8 @@
 """常量定义."""
 
-DOMAIN = "petkit_solo"
+DOMAIN = "petkit_feeder"
 
-DEFAULT_NAME = "PetKit SOLO"
+DEFAULT_NAME = "PetKit 喂食器"
 
 LOW_FOOD_THRESHOLD = 20
 

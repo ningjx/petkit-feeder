@@ -1,12 +1,14 @@
 /** 卡片配置类型定义 */
 export interface PetkitSoloCardConfig {
-  // 实体配置
-  entity: string;              // 主实体（喂食计划）
-  plan_entity?: string;        // 喂食计划实体（可选，默认用 entity）
-  history_entity?: string;     // 历史记录实体（必需）
-  refresh_entity?: string;     // 刷新按钮实体（可选，默认推断）
-  feed_amount_entity?: string; // 出粮量实体（可选，用于手动喂食）
-  device_name_entity?: string; // 设备名称实体（可选）
+  // 设备配置
+  device_id?: string;           // 设备ID（推荐，用于自动推断 entity）
+  
+  // 实体配置（可选，如果提供 device_id 则自动推断）
+  entity?: string;              // 主实体（喂食计划）
+  history_entity?: string;      // 历史记录实体
+  refresh_entity?: string;      // 刷新按钮实体
+  feed_amount_entity?: string;  // 出粮量实体
+  device_name_entity?: string;  // 设备名称实体
   
   // 显示控制
   show_timeline?: boolean;     // 显示时间线（默认 true）
@@ -14,8 +16,8 @@ export interface PetkitSoloCardConfig {
   show_actions?: boolean;      // 显示操作按钮（默认 true）
   
   // 其他
-  name?: string;               // 卡片标题
-  history_limit?: number;      // 历史记录限制（本次不用）
+  name?: string;               // 卡片标题（覆盖设备名称）
+  history_limit?: number;      // 历史记录限制
 }
 
 /** 喂食计划项（原始数据） */

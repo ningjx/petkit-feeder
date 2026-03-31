@@ -1,6 +1,6 @@
-# Petkit Solo Card
+# Petkit Feeder Card
 
-小佩 SOLO 喂食器 Lovelace 卡片
+小佩喂食器 Lovelace 卡片
 
 ## 功能
 
@@ -16,36 +16,38 @@
 
 ### HACS
 
-搜索 "Petkit Solo Card" 安装
+搜索 "Petkit Feeder Card" 安装
 
 ### 手动
 
-1. 下载 `dist/petkit-solo-card.js`
+1. 下载 `dist/petkit-feeder-card.js`
 2. 放到 `/config/www/`
-3. 添加资源 `/local/petkit-solo-card.js`
+3. 添加资源 `/local/petkit-feeder-card.js`
 
 ## 配置
 
 ```yaml
-type: custom:petkit-solo-card
-entity: sensor.petkit_solo_feeding_schedule
-history_entity: sensor.petkit_solo_feeding_history
+type: custom:petkit-feeder-card
+device_id: "276669"
 ```
 
 | 选项 | 类型 | 必需 | 默认 | 说明 |
 |------|------|------|------|------|
-| `entity` | string | 是 | - | 喂食计划传感器 |
-| `history_entity` | string | 否 | - | 历史记录传感器 |
+| `device_id` | string | 是* | - | 设备ID |
+| `entity` | string | 否 | 自动推断 | 喂食计划传感器 |
+| `history_entity` | string | 否 | 自动推断 | 历史记录传感器 |
 | `name` | string | 否 | 设备名 | 卡片标题 |
 | `show_timeline` | bool | 否 | true | 显示时间线 |
 | `show_summary` | bool | 否 | true | 显示统计 |
 | `show_actions` | bool | 否 | true | 显示操作按钮 |
 
+*`device_id` 和 `entity` 二选一必填
+
 ## 界面
 
 ```
 ┌─────────────────────────────────────┐
-│ 小佩 SOLO              3月30日 周日  │
+│ 小佩喂食器              3月30日 周日  │
 │                         [刷新] [出粮]│
 ├─────────────────────────────────────┤
 │ 06:00  早餐      10g       ✓ ── ⊗   │
@@ -88,7 +90,7 @@ history_entity: sensor.petkit_solo_feeding_history
 ## 要求
 
 - Home Assistant 2024.1+
-- petkit_solo 集成已配置
+- petkit_feeder 集成已配置
 - 传感器实体有正确的属性
 
 ## 开发

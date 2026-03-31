@@ -1,4 +1,4 @@
-"""PetKit SOLO 喂食器 Home Assistant 集成."""
+"""PetKit 喂食器 Home Assistant 集成."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def _get_coordinator(hass: HomeAssistant, entry_id: str | None) -> PetkitDataUpd
         return hass.data[DOMAIN][entry_id]
     for coord in hass.data[DOMAIN].values():
         return coord
-    raise ValueError("未找到任何 PetKit SOLO 配置")
+    raise ValueError("未找到任何 PetKit 喂食器配置")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

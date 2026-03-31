@@ -3,9 +3,9 @@ import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 
 export default {
-  input: 'src/petkit-solo-card.ts',
+  input: 'src/petkit-feeder-card.ts',
   output: {
-    file: 'dist/petkit-solo-card.js',
+    file: 'dist/petkit-feeder-card.js',
     format: 'esm',
     sourcemap: false,
   },

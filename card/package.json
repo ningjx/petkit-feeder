@@ -1,8 +1,8 @@
 {
-  "name": "petkit-solo-card",
-  "version": "0.2.0",
-  "description": "小佩 SOLO 喂食器 Lovelace 卡片（时间线版本）",
-  "main": "dist/petkit-solo-card.js",
+  "name": "petkit-feeder-card",
+  "version": "0.3.0",
+  "description": "小佩喂食器 Lovelace 卡片",
+  "main": "dist/petkit-feeder-card.js",
   "scripts": {
     "build": "rollup -c --bundleConfigAsCjs",
     "start": "rollup -c --watch --bundleConfigAsCjs",

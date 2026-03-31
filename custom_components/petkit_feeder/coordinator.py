@@ -34,7 +34,7 @@ _last_request_time: float | None = None
 
 
 class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
-    """小佩 SOLO 数据协调器."""
+    """小佩喂食器数据协调器."""
 
     def __init__(
         self,

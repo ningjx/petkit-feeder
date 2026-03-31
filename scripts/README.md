@@ -192,10 +192,10 @@ $ ./scripts/setup.sh build
 🔹 构建前端卡片...
 ℹ️  执行构建...
 
-> petkit-solo-card@0.2.0 build
+> petkit-feeder-card@0.3.0 build
 > rollup -c --bundleConfigAsCjs
 
-created dist/petkit-solo-card.js in 3.9s
+created dist/petkit-feeder-card.js in 3.9s
 ✅ 前端构建完成 (32K)
 ```
 
@@ -246,7 +246,7 @@ npm --version  # 需要 >= 9
 
 ```bash
 # 查看详细错误
-python3 -m py_compile custom_components/petkit_solo/<文件>.py
+python3 -m py_compile custom_components/petkit_feeder/<文件>.py
 
 # 修复后重新检查
 ./scripts/setup.sh verify
@@ -293,7 +293,7 @@ petkit-ha/
 │   ├── dist/
 │   └── package.json
 ├── custom_components/     # 后端插件
-│   └── petkit_solo/
+│   └── petkit_feeder/
 └── ...
 ```
 

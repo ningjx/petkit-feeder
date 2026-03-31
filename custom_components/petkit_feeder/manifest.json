@@ -1,12 +1,12 @@
 {
-  "domain": "petkit_solo",
-  "name": "小佩 SOLO 喂食器",
+  "domain": "petkit_feeder",
+  "name": "小佩喂食器",
   "codeowners": ["@ning"],
   "config_flow": true,
   "documentation": "https://github.com/ning/petkit-ha",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/ning/petkit-ha/issues",
-  "loggers": ["petkit_solo"],
+  "loggers": ["petkit_feeder"],
   "requirements": ["m3u8>=3.0.0"],
   "version": "1.0.0"
 }

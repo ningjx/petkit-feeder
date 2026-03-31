@@ -1,7 +1,7 @@
 {
-  "name": "小佩 SOLO 喂食器",
+  "name": "小佩喂食器",
   "content_in_root": false,
-  "filename": "petkit-solo-card.js",
+  "filename": "petkit-feeder-card.js",
   "homeassistant": "2024.1.0",
   "hacs": "1.34.0",
   "zip_release": false,

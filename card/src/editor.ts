@@ -4,17 +4,23 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { PetkitSoloCardConfig } from './types';
 
-@customElement('petkit-solo-card-editor')
-export class PetkitSoloCardEditor extends LitElement {
+@customElement('petkit-feeder-card-editor')
+export class PetkitFeederCardEditor extends LitElement {
   @property() public hass?: any;
   @property() public config?: PetkitSoloCardConfig;
 
   private _schema = [
     { 
+      name: 'device_id', 
+      required: false, 
+      selector: { text: {} },
+      label: '设备ID'
+    },
+    { 
       name: 'entity', 
-      required: true, 
+      required: false, 
       selector: { entity: { domain: ['sensor'] } },
-      label: '喂食计划实体'
+      label: '喂食计划实体（可选，提供 device_id 时自动推断）'
     },
     { 
       name: 'history_entity', 
@@ -23,15 +29,9 @@ export class PetkitSoloCardEditor extends LitElement {
       label: '历史记录实体'
     },
     { 
-      name: 'device_name_entity', 
-      required: false, 
-      selector: { entity: { domain: ['sensor'] } },
-      label: '设备名称实体'
-    },
-    { 
       name: 'name', 
       selector: { text: {} },
-      label: '卡片标题'
+      label: '卡片标题（可选，默认使用设备名称）'
     },
     {
       type: 'grid',
@@ -75,9 +75,9 @@ export class PetkitSoloCardEditor extends LitElement {
 
   private _computeLabel = (schema: any) => {
     const labels: Record<string, string> = {
+      device_id: '设备ID',
       entity: '喂食计划实体',
       history_entity: '历史记录实体',
-      device_name_entity: '设备名称实体',
       name: '卡片标题',
       show_timeline: '显示时间线',
       show_summary: '显示统计',
@@ -111,6 +111,6 @@ export class PetkitSoloCardEditor extends LitElement {
 }
 
 // 显式注册自定义元素
-if (!customElements.get('petkit-solo-card-editor')) {
-  customElements.define('petkit-solo-card-editor', PetkitSoloCardEditor);
+if (!customElements.get('petkit-feeder-card-editor')) {
+  customElements.define('petkit-feeder-card-editor', PetkitFeederCardEditor);
 }

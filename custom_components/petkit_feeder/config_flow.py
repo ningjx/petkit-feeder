@@ -28,7 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """小佩 SOLO 配置流程."""
+    """小佩喂食器配置流程."""
 
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
@@ -163,7 +163,7 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class PetkitOptionsFlowHandler(config_entries.OptionsFlow):
-    """小佩 SOLO 选项流程."""
+    """小佩喂食器选项流程."""
 
     async def async_step_init(
         self, user_input: dict | None = None

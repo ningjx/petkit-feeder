@@ -28,7 +28,7 @@ def run_command(cmd: list[str], description: str) -> bool:
 def main():
     """主函数."""
     project_root = Path(__file__).parent
-    custom_components = project_root / "custom_components" / "petkit_solo"
+    custom_components = project_root / "custom_components" / "petkit_feeder"
     
     checks = [
         # Python 语法检查
@@ -42,7 +42,7 @@ def main():
         (
             ["python3", "-c", 
              "import sys; sys.path.insert(0, '.'); "
-             "from custom_components.petkit_solo import *; "
+             "from custom_components.petkit_feeder import *; "
              "print('导入成功')"],
             "模块导入检查"
         ),

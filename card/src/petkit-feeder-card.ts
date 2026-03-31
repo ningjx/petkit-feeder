@@ -1,4 +1,4 @@
-/** 小佩 SOLO 喂食器卡片 - 主组件（时间线版本） */
+/** 小佩喂食器卡片 - 主组件 */
 
 import { LitElement, html, css, svg } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
@@ -9,15 +9,15 @@ import { PetkitSoloCardConfig, TimelineItem, TodaySummary, FeedingPlanItem, Feed
 // 注册到卡片选择器
 (window as any).customCards = (window as any).customCards || [];
 (window as any).customCards.push({
-  type: 'petkit-solo-card',
-  name: '小佩 SOLO 喂食器',
-  description: '显示小佩 SOLO 喂食器状态、喂食计划和历史记录',
+  type: 'petkit-feeder-card',
+  name: '小佩喂食器',
+  description: '显示小佩喂食器状态、喂食计划和历史记录',
   preview: true,
   documentationURL: 'https://github.com/yourusername/petkit-ha',
 });
 
-@customElement('petkit-solo-card')
-export class PetkitSoloCard extends LitElement {
+@customElement('petkit-feeder-card')
+export class PetkitFeederCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private _config?: PetkitSoloCardConfig;
   private _pendingPlanChanges: Map<string, { time: string; name: string; amount: number; enabled?: boolean; deleted?: boolean; isNew?: boolean }> = new Map();
@@ -25,10 +25,18 @@ export class PetkitSoloCard extends LitElement {
   private _originalItemData: { time: string; name: string; amount: number } | null = null;
   private _saveTimeout: number | null = null;
 
+  private _getEntityId(entityType: string): string {
+    if (!this._config) return '';
+    const deviceId = this._config.device_id;
+    if (deviceId) {
+      return `sensor.petkit_feeder_${deviceId}_${entityType}`;
+    }
+    return this._config.entity || '';
+  }
+
   static getStubConfig(): PetkitSoloCardConfig {
     return {
-      entity: 'sensor.petkit_solo_feeding_schedule',
-      history_entity: 'sensor.petkit_solo_feeding_history',
+      device_id: '',
       show_timeline: true,
       show_summary: true,
       show_actions: true,
@@ -36,12 +44,12 @@ export class PetkitSoloCard extends LitElement {
   }
 
   static getConfigElement() {
-    return document.createElement('petkit-solo-card-editor');
+    return document.createElement('petkit-feeder-card-editor');
   }
 
   public setConfig(config: PetkitSoloCardConfig): void {
-    if (!config.entity) {
-      throw new Error('需要定义 entity');
+    if (!config.device_id && !config.entity) {
+      throw new Error('需要定义 device_id 或 entity');
     }
     this._config = {
       ...config,
@@ -61,17 +69,18 @@ export class PetkitSoloCard extends LitElement {
     }
 
     // 获取实体数据
-    const planEntity = this.hass.states[this._config.plan_entity || this._config.entity];
-    const historyEntity = this._config.history_entity 
-      ? this.hass.states[this._config.history_entity] 
-      : null;
+    const planEntityId = this._config.entity || this._getEntityId('feeding_schedule');
+    const historyEntityId = this._config.history_entity || this._getEntityId('feeding_history');
+
+    const planEntity = this.hass.states[planEntityId];
+    const historyEntity = historyEntityId ? this.hass.states[historyEntityId] : null;
 
     if (!planEntity) {
       return html`
         <ha-card>
           <div class="error-state">
             <ha-icon .icon=${'mdi:alert-circle'}></ha-icon>
-            <p>实体不存在：${this._config.entity}</p>
+            <p>实体不存在：${planEntityId}</p>
           </div>
         </ha-card>
       `;
@@ -85,13 +94,12 @@ export class PetkitSoloCard extends LitElement {
 
     let deviceName = this._config.name;
     if (!deviceName) {
-      const deviceNameEntityId = this._config.device_name_entity || 
-        this._config.entity.replace('_feeding_schedule', '_device_name');
+      const deviceNameEntityId = this._config.device_name_entity || this._getEntityId('device_name');
       const deviceNameEntity = this.hass.states[deviceNameEntityId];
       deviceName = deviceNameEntity?.state;
     }
     if (!deviceName) {
-      deviceName = planEntity.attributes.friendly_name || '小佩 SOLO 喂食器';
+      deviceName = planEntity.attributes.friendly_name || '小佩喂食器';
     }
 
 return html`
@@ -155,9 +163,8 @@ return html`
   /** 解析喂食计划 */
   private _parseTodayPlans(attrs: any): FeedingPlanItem[] {
     const weekday = this._getTodayWeekday();
-    const scheduleCn = attrs.schedule_cn || attrs.schedule || {};
-    const todayPlans = scheduleCn[weekday] || [];
-    const isEnabled = attrs.is_executed !== 0;
+    const schedule = attrs.schedule || {};
+    const todayPlans = schedule[weekday] || [];
 
     return todayPlans.map((item: any, index: number) => {
       return {
@@ -165,10 +172,10 @@ return html`
         itemId: item.id,
         name: item.name || `${weekday}喂食`,
         time: item.time || '',
-        amount: item.portions || item.amount || 0,
-        is_enabled: isEnabled,
+        amount: item.amount || 0,
+        is_enabled: item.suspended !== 1,
         is_completed: false,
-        enabled: isEnabled,
+        enabled: item.suspended !== 1,
       };
     });
   }
@@ -652,7 +659,7 @@ return html`
     this.requestUpdate();
     
     try {
-      await this.hass.callService('petkit_solo', 'toggle_feeding_item', {
+      await this.hass.callService('petkit_feeder', 'toggle_feeding_item', {
         day: weekday,
         item_id: item.itemId,
         enabled: newEnabled
@@ -711,7 +718,7 @@ return html`
     this.requestUpdate();
     
     try {
-      await this.hass.callService('petkit_solo', 'remove_feeding_item', {
+      await this.hass.callService('petkit_feeder', 'remove_feeding_item', {
         day: weekday,
         item_id: item.itemId
       });
@@ -879,7 +886,7 @@ return html`
     });
     
     try {
-      await this.hass.callService('petkit_solo', 'update_feeding_item', {
+      await this.hass.callService('petkit_feeder', 'update_feeding_item', {
         day: weekday,
         item_id: editData.itemId,
         time: editData.time,
@@ -919,10 +926,10 @@ return html`
     
     const planEntity = this._config?.entity ? this.hass.states[this._config.entity] : null;
     if (planEntity) {
-      const scheduleCn = planEntity.attributes?.schedule_cn || planEntity.attributes?.schedule || {};
+      const schedule = planEntity.attributes?.schedule || {};
       const weekday = new Date().getDay() || 7;
       const weekdayNames = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-      const todayPlans = scheduleCn[weekdayNames[weekday]] || [];
+      const todayPlans = schedule[weekdayNames[weekday]] || [];
       
       const existingPlan = todayPlans.find((p: any) => p.time === editData.time);
       
@@ -945,7 +952,7 @@ return html`
     });
     
     try {
-      await this.hass.callService('petkit_solo', 'add_feeding_item', {
+      await this.hass.callService('petkit_feeder', 'add_feeding_item', {
         day: weekday,
         time: editData.time,
         amount: editData.amount,
@@ -1598,6 +1605,6 @@ static styles = css`
 }
 
 // 显式注册自定义元素
-if (!customElements.get('petkit-solo-card')) {
-  customElements.define('petkit-solo-card', PetkitSoloCard);
+if (!customElements.get('petkit-feeder-card')) {
+  customElements.define('petkit-feeder-card', PetkitFeederCard);
 }

@@ -1,5 +1,5 @@
 # Petkit HA 运行时依赖
 # Home Assistant 会自动安装这些依赖
 
-# pypetkitapi 已内置于 custom_components/petkit_solo/pypetkitapi
+# pypetkitapi 已内置于 custom_components/petkit_feeder/pypetkitapi
 # 无需额外安装

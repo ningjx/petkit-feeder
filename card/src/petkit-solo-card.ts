@@ -29,7 +29,6 @@ export class PetkitSoloCard extends LitElement {
     return {
       entity: 'sensor.petkit_solo_feeding_schedule',
       history_entity: 'sensor.petkit_solo_feeding_history',
-      name: '小佩 SOLO 喂食器',
       show_timeline: true,
       show_summary: true,
       show_actions: true,
@@ -85,8 +84,10 @@ export class PetkitSoloCard extends LitElement {
     );
 
     let deviceName = this._config.name;
-    if (!deviceName && this._config.device_name_entity) {
-      const deviceNameEntity = this.hass.states[this._config.device_name_entity];
+    if (!deviceName) {
+      const deviceNameEntityId = this._config.device_name_entity || 
+        this._config.entity.replace('_feeding_schedule', '_device_name');
+      const deviceNameEntity = this.hass.states[deviceNameEntityId];
       deviceName = deviceNameEntity?.state;
     }
     if (!deviceName) {

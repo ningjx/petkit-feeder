@@ -6,6 +6,7 @@ export interface PetkitSoloCardConfig {
   history_entity?: string;     // 历史记录实体（必需）
   refresh_entity?: string;     // 刷新按钮实体（可选，默认推断）
   feed_amount_entity?: string; // 出粮量实体（可选，用于手动喂食）
+  device_name_entity?: string; // 设备名称实体（可选）
   
   // 显示控制
   show_timeline?: boolean;     // 显示时间线（默认 true）

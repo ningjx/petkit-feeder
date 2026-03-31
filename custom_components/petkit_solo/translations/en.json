@@ -41,6 +41,9 @@
   },
   "entity": {
     "sensor": {
+      "device_name": {
+        "name": "Device Name"
+      },
       "food_level": {
         "name": "Food Level"
       },

@@ -37,6 +37,9 @@
   },
   "entity": {
     "sensor": {
+      "device_name": {
+        "name": "设备名称"
+      },
       "food_level": {
         "name": "粮量"
       },

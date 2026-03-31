@@ -25,12 +25,12 @@ async def async_setup_entry(
     coordinator: PetkitDataUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     
     entities = [
-        # PetkitFoodLevelSensor(coordinator, config_entry),  # 设备不支持检测粮量，已移除
+        PetkitDeviceNameSensor(coordinator, config_entry),
         PetkitLastFeedingSensor(coordinator, config_entry),
         PetkitLastAmountSensor(coordinator, config_entry),
         PetkitTodayCountSensor(coordinator, config_entry),
         PetkitFeedingScheduleSensor(coordinator, config_entry),
-        PetkitFeedingHistorySensor(coordinator, config_entry),  # 新增：喂食历史传感器
+        PetkitFeedingHistorySensor(coordinator, config_entry),
     ]
     
     # 添加喂食统计传感器（如果设备支持）
@@ -83,6 +83,21 @@ class PetkitSensorBase(CoordinatorEntity, SensorEntity):
         if not self.coordinator.data:
             return None
         return self.coordinator.data.get("device_info")
+
+
+class PetkitDeviceNameSensor(PetkitSensorBase):
+    """设备名称传感器."""
+
+    _attr_translation_key = "device_name"
+    _attr_icon = "mdi:tag"
+
+    @property
+    def native_value(self) -> str | None:
+        """返回设备名称."""
+        device = self._get_device()
+        if not device:
+            return None
+        return getattr(device, "name", None)
 
 
 class PetkitFoodLevelSensor(PetkitSensorBase):

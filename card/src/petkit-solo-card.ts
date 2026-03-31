@@ -84,7 +84,14 @@ export class PetkitSoloCard extends LitElement {
       historyEntity?.attributes || {}
     );
 
-    const deviceName = this._config.name || planEntity.attributes.friendly_name || '小佩 SOLO 喂食器';
+    let deviceName = this._config.name;
+    if (!deviceName && this._config.device_name_entity) {
+      const deviceNameEntity = this.hass.states[this._config.device_name_entity];
+      deviceName = deviceNameEntity?.state;
+    }
+    if (!deviceName) {
+      deviceName = planEntity.attributes.friendly_name || '小佩 SOLO 喂食器';
+    }
 
 return html`
       <ha-card @focusout=${this._handleCardFocusOut}>

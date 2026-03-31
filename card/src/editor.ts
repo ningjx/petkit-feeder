@@ -23,6 +23,12 @@ export class PetkitSoloCardEditor extends LitElement {
       label: '历史记录实体'
     },
     { 
+      name: 'device_name_entity', 
+      required: false, 
+      selector: { entity: { domain: ['sensor'] } },
+      label: '设备名称实体'
+    },
+    { 
       name: 'name', 
       selector: { text: {} },
       label: '卡片标题'
@@ -71,6 +77,7 @@ export class PetkitSoloCardEditor extends LitElement {
     const labels: Record<string, string> = {
       entity: '喂食计划实体',
       history_entity: '历史记录实体',
+      device_name_entity: '设备名称实体',
       name: '卡片标题',
       show_timeline: '显示时间线',
       show_summary: '显示统计',

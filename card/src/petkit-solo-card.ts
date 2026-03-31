@@ -1036,9 +1036,11 @@ static styles = css`
     
     /* 刷新按钮 - 旋转动画，悬停光效 */
     .refresh-btn {
-      width: 28px;
-      height: 28px;
       color: var(--primary-text-color, #212121);
+    }
+    
+    .refresh-btn:hover::before {
+      opacity: 0;
     }
     
     .refresh-btn:hover {

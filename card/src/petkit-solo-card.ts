@@ -663,6 +663,18 @@ return html`
       return;
     }
     
+    if (this._pendingNewItem?.itemId === item.itemId) {
+      this._pendingNewItem = null;
+      this._editingItem = null;
+      this._originalItemData = null;
+      if (this._saveTimeout) {
+        clearTimeout(this._saveTimeout);
+        this._saveTimeout = null;
+      }
+      this.requestUpdate();
+      return;
+    }
+    
     const pendingChange = this._pendingPlanChanges.get(item.itemId);
     if (pendingChange?.deleted) {
       return;

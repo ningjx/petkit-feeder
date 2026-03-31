@@ -20,10 +20,9 @@ import { PetkitSoloCardConfig, TimelineItem, TodaySummary, FeedingPlanItem, Feed
 export class PetkitSoloCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private _config?: PetkitSoloCardConfig;
-  private _pendingPlanChanges: Map<string, { time: string; name: string; amount: number; enabled?: boolean; deleted?: boolean }> = new Map();
+  private _pendingPlanChanges: Map<string, { time: string; name: string; amount: number; enabled?: boolean; deleted?: boolean; isNew?: boolean }> = new Map();
   private _editingItem: { itemId: string; field: 'time' | 'name' | 'amount'; time: string; name: string; amount: number } | null = null;
   private _originalItemData: { time: string; name: string; amount: number } | null = null;
-  private _pendingNewItem: { itemId: string; time: string; name: string; amount: number } | null = null;
   private _saveTimeout: number | null = null;
 
   static getStubConfig(): PetkitSoloCardConfig {
@@ -292,22 +291,24 @@ return html`
     const records = this._parseTodayRecords(historyAttrs, today);
     let timeline = this._mergeTimeline(plans, records);
     
-    if (this._pendingNewItem) {
-      const newItem: TimelineItem = {
-        id: this._pendingNewItem.itemId,
-        itemId: this._pendingNewItem.itemId,
-        time: this._pendingNewItem.time,
-        name: this._pendingNewItem.name,
-        itemType: 'plan',
-        plannedAmount: this._pendingNewItem.amount,
-        isExecuted: false,
-        isEnabled: true,
-        canDisable: true,
-        canDelete: true,
-      };
-      timeline.push(newItem);
-      timeline.sort((a, b) => a.time.localeCompare(b.time));
-    }
+    this._pendingPlanChanges.forEach((change, itemId) => {
+      if (change.isNew && !change.deleted) {
+        const newItem: TimelineItem = {
+          id: itemId,
+          itemId: itemId,
+          time: change.time,
+          name: change.name,
+          itemType: 'plan',
+          plannedAmount: change.amount,
+          isExecuted: false,
+          isEnabled: true,
+          canDisable: true,
+          canDelete: true,
+        };
+        timeline.push(newItem);
+      }
+    });
+    timeline.sort((a, b) => a.time.localeCompare(b.time));
     
     const summary = this._getSummaryFromAttrs(historyAttrs, timeline);
 
@@ -663,10 +664,14 @@ return html`
       return;
     }
     
-    if (this._pendingNewItem?.itemId === item.itemId) {
-      this._pendingNewItem = null;
-      this._editingItem = null;
-      this._originalItemData = null;
+    const pendingChange = this._pendingPlanChanges.get(item.itemId);
+    
+    if (pendingChange?.isNew) {
+      this._pendingPlanChanges.delete(item.itemId);
+      if (this._editingItem?.itemId === item.itemId) {
+        this._editingItem = null;
+        this._originalItemData = null;
+      }
       if (this._saveTimeout) {
         clearTimeout(this._saveTimeout);
         this._saveTimeout = null;
@@ -675,7 +680,6 @@ return html`
       return;
     }
     
-    const pendingChange = this._pendingPlanChanges.get(item.itemId);
     if (pendingChange?.deleted) {
       return;
     }
@@ -718,23 +722,6 @@ return html`
       this._saveTimeout = null;
     }
     
-    if (this._pendingNewItem?.itemId === item.itemId) {
-      this._editingItem = {
-        itemId: item.itemId,
-        field: field,
-        time: this._pendingNewItem.time,
-        name: this._pendingNewItem.name,
-        amount: this._pendingNewItem.amount,
-      };
-      this._originalItemData = {
-        time: this._pendingNewItem.time,
-        name: this._pendingNewItem.name,
-        amount: this._pendingNewItem.amount,
-      };
-      this.requestUpdate();
-      return;
-    }
-    
     const pendingChange = this._pendingPlanChanges.get(item.itemId);
     const editTime = pendingChange?.time || item.time;
     const editName = pendingChange?.name || item.name;
@@ -768,12 +755,12 @@ return html`
     
     const newItemId = `new_${Date.now()}`;
     
-    this._pendingNewItem = {
-      itemId: newItemId,
+    this._pendingPlanChanges.set(newItemId, {
       time: '00:00',
       name: '早餐',
       amount: 10,
-    };
+      isNew: true,
+    });
     
     this._editingItem = {
       itemId: newItemId,
@@ -811,43 +798,36 @@ return html`
 
   /** 执行待保存的修改 */
   private _doSavePendingChanges(): void {
-    if (this._pendingNewItem && this._editingItem) {
-      const hasChanges = this._originalItemData && (
-        this._editingItem.time !== this._originalItemData.time ||
-        this._editingItem.name !== this._originalItemData.name ||
-        this._editingItem.amount !== this._originalItemData.amount
-      );
-      
-      this._pendingNewItem.time = this._editingItem.time;
-      this._pendingNewItem.name = this._editingItem.name;
-      this._pendingNewItem.amount = this._editingItem.amount;
-      
-      this._editingItem = null;
-      this._originalItemData = null;
-      
-      if (hasChanges) {
-        this._saveNewItem();
-      }
-    } else if (this._editingItem) {
-      const editData = { ...this._editingItem };
-      const originalData = this._originalItemData;
-      
-      this._editingItem = null;
-      this._originalItemData = null;
-      
-      const hasChanges = originalData && (
-        editData.time !== originalData.time ||
-        editData.name !== originalData.name ||
-        editData.amount !== originalData.amount
-      );
-      
-      if (hasChanges) {
-        this._pendingPlanChanges.set(editData.itemId, {
-          time: editData.time,
-          name: editData.name,
-          amount: editData.amount,
-        });
-        this.requestUpdate();
+    if (!this._editingItem) {
+      return;
+    }
+    
+    const editData = { ...this._editingItem };
+    const originalData = this._originalItemData;
+    const pendingChange = this._pendingPlanChanges.get(editData.itemId);
+    const isNew = pendingChange?.isNew;
+    
+    this._editingItem = null;
+    this._originalItemData = null;
+    
+    const hasChanges = originalData && (
+      editData.time !== originalData.time ||
+      editData.name !== originalData.name ||
+      editData.amount !== originalData.amount
+    );
+    
+    this._pendingPlanChanges.set(editData.itemId, {
+      time: editData.time,
+      name: editData.name,
+      amount: editData.amount,
+      isNew: isNew,
+    });
+    
+    if (hasChanges) {
+      this.requestUpdate();
+      if (isNew) {
+        this._saveNewItem(editData);
+      } else {
         this._updateExistingItem(editData);
       }
     }
@@ -892,9 +872,14 @@ return html`
 
   /** 操作：取消编辑 */
   private _cancelEdit(): void {
+    if (this._editingItem) {
+      const pendingChange = this._pendingPlanChanges.get(this._editingItem.itemId);
+      if (pendingChange?.isNew) {
+        this._pendingPlanChanges.delete(this._editingItem.itemId);
+      }
+    }
     this._editingItem = null;
     this._originalItemData = null;
-    this._pendingNewItem = null;
     if (this._saveTimeout) {
       clearTimeout(this._saveTimeout);
       this._saveTimeout = null;
@@ -902,8 +887,8 @@ return html`
     this.requestUpdate();
   }
 
-  private async _saveNewItem(): Promise<void> {
-    if (!this.hass || !this._pendingNewItem) {
+  private async _saveNewItem(editData: { itemId: string; time: string; name: string; amount: number }): Promise<void> {
+    if (!this.hass) {
       return;
     }
     
@@ -914,11 +899,11 @@ return html`
       const weekdayNames = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
       const todayPlans = scheduleCn[weekdayNames[weekday]] || [];
       
-      const existingPlan = todayPlans.find((p: any) => p.time === this._pendingNewItem!.time);
+      const existingPlan = todayPlans.find((p: any) => p.time === editData.time);
       
       if (existingPlan) {
         console.log('[PetkitSoloCard] 该时间点已存在计划，跳过保存');
-        this._pendingNewItem = null;
+        this._pendingPlanChanges.delete(editData.itemId);
         this.requestUpdate();
         return;
       }
@@ -929,20 +914,20 @@ return html`
     
     console.log('[PetkitSoloCard] 保存新计划:', {
       day: weekday,
-      time: this._pendingNewItem.time,
-      amount: this._pendingNewItem.amount,
-      name: this._pendingNewItem.name,
+      time: editData.time,
+      amount: editData.amount,
+      name: editData.name,
     });
     
     try {
       await this.hass.callService('petkit_solo', 'add_feeding_item', {
         day: weekday,
-        time: this._pendingNewItem.time,
-        amount: this._pendingNewItem.amount,
-        name: this._pendingNewItem.name,
+        time: editData.time,
+        amount: editData.amount,
+        name: editData.name,
       });
       console.log('[PetkitSoloCard] 保存新计划成功');
-      this._pendingNewItem = null;
+      this._pendingPlanChanges.delete(editData.itemId);
       this.requestUpdate();
     } catch (error) {
       console.error('[PetkitSoloCard] 保存新计划失败:', error);

@@ -39,7 +39,7 @@ type: custom:petkit-feeder-card
 device_id: "276669"
 ```
 
-## 鸭谢
+## 第三方API
 
 本项目基于 [py-petkit-api](https://github.com/Jezza34000/py-petkit-api) 开发，感谢原作者的贡献。
 

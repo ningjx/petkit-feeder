@@ -202,15 +202,11 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         config_entry: config_entries.ConfigEntry,
     ) -> PetkitOptionsFlowHandler:
         """获取选项流程."""
-        return PetkitOptionsFlowHandler(config_entry)
+        return PetkitOptionsFlowHandler()
 
 
 class PetkitOptionsFlowHandler(config_entries.OptionsFlow):
     """小佩喂食器选项流程."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """初始化选项流程."""
-        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict | None = None

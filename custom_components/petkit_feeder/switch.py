@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import logging
-from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, DEFAULT_NAME
+from .const import DOMAIN
 from .coordinator import PetkitDataUpdateCoordinator
+from .entities import PetkitSwitchEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,60 +31,12 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class PetkitSwitchBase(CoordinatorEntity, SwitchEntity):
+class PetkitSwitchBase(PetkitSwitchEntity):
     """开关基类."""
-
-    _attr_has_entity_name = True
-
-    def __init__(
-        self,
-        coordinator: PetkitDataUpdateCoordinator,
-        config_entry,
-    ) -> None:
-        """初始化开关."""
-        super().__init__(coordinator)
-        self._config_entry = config_entry
-        
-        self._device_id = getattr(coordinator, '_device_id', 'unknown')
-
-    def _get_device(self):
-        """获取设备数据."""
-        if not self.coordinator.data:
-            return None
-        return self.coordinator.data.get("device_info")
-
-    def _get_settings(self):
-        """获取设备设置."""
-        device = self._get_device()
-        if not device:
-            return None
-        return getattr(device, "settings", None)
 
     async def _update_setting(self, key: str, value: int) -> bool:
         """更新设备设置."""
         return await self.coordinator.update_setting(key, value)
-
-    @property
-    def device_info(self):
-        """返回设备信息."""
-        device = self._get_device()
-        model = "Unknown"
-        device_name = DEFAULT_NAME
-        
-        if device:
-            # 获取设备型号
-            if hasattr(device, "device_nfo") and device.device_nfo:
-                model = device.device_nfo.modele_name or "Unknown"
-            # 获取设备名称
-            if hasattr(device, "name") and device.name:
-                device_name = device.name
-        
-        return {
-            "identifiers": {(DOMAIN, self._device_id)},
-            "name": device_name,
-            "manufacturer": "Petkit",
-            "model": model,
-        }
 
 
 class PetkitLightModeSwitch(PetkitSwitchBase):

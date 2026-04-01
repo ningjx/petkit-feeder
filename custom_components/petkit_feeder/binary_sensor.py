@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import logging
-from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .pypetkitapi.feeder_container import Feeder
 
-from .const import DOMAIN, DEFAULT_NAME, LOW_FOOD_THRESHOLD
+from .const import DOMAIN
 from .coordinator import PetkitDataUpdateCoordinator
+from .entities import PetkitBinarySensorEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,43 +24,21 @@ async def async_setup_entry(
     
     entities = [
         PetkitOnlineSensor(coordinator, config_entry),
-        PetkitLowFoodSensor(coordinator, config_entry),
     ]
-    
-    # 添加电池相关传感器（如果设备支持）
-    device = coordinator.data.get("device_info") if coordinator.data else None
-    if device and hasattr(device, "state") and device.state:
-        # 电池状态（有/没有电池）
-        if hasattr(device.state, "battery_status") and device.state.battery_status is not None:
-            entities.append(PetkitBatteryStatusSensor(coordinator, config_entry))
-        
-        # 电池供电（是否使用电池供电）
-        if hasattr(device.state, "battery_power") and device.state.battery_power is not None:
-            entities.append(PetkitBatteryPowerSensor(coordinator, config_entry))
     
     async_add_entities(entities)
 
 
-class PetkitBinarySensorBase(CoordinatorEntity, BinarySensorEntity):
+class PetkitBinarySensorBase(PetkitBinarySensorEntity):
     """小佩二进制传感器基类."""
-
-    _attr_has_entity_name = True
 
     def __init__(
         self,
         coordinator: PetkitDataUpdateCoordinator,
         config_entry,
     ) -> None:
-        """初始化传感器."""
-        super().__init__(coordinator)
-        self._config_entry = config_entry
-        
-        self._device_id = getattr(coordinator, '_device_id', 'unknown')
-        
-        self._attr_unique_id = f"{self._device_id}_{self.translation_key}"
-        
-        # 直接设置 entity_id
-        self.entity_id = f"binary_sensor.petkit_feeder_{self._device_id}_{self.translation_key}"
+        """初始化二进制传感器."""
+        super().__init__(coordinator, config_entry)
         
         _LOGGER.debug(
             "[PetkitFeeder] BinarySensor initialized: entity_id=%s, unique_id=%s, device_id=%s",
@@ -69,28 +46,6 @@ class PetkitBinarySensorBase(CoordinatorEntity, BinarySensorEntity):
             self._attr_unique_id,
             self._device_id,
         )
-
-    @property
-    def device_info(self):
-        """返回设备信息."""
-        device = self._get_device()
-        model = "Unknown"
-        device_name = DEFAULT_NAME
-        
-        if device:
-            # 获取设备型号
-            if hasattr(device, "device_nfo") and device.device_nfo:
-                model = device.device_nfo.modele_name or "Unknown"
-            # 获取设备名称
-            if hasattr(device, "name") and device.name:
-                device_name = device.name
-        
-        return {
-            "identifiers": {(DOMAIN, self._device_id)},
-            "name": device_name,
-            "manufacturer": "Petkit",
-            "model": model,
-        }
 
     def _get_device(self) -> Feeder | None:
         """获取设备数据."""

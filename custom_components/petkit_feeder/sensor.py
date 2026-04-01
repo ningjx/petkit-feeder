@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .pypetkitapi.feeder_container import Feeder
 
-from .const import DOMAIN, DEFAULT_NAME
+from .const import DOMAIN
 from .coordinator import PetkitDataUpdateCoordinator
+from .entities import PetkitSensorEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,10 +57,8 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class PetkitSensorBase(CoordinatorEntity, SensorEntity):
+class PetkitSensorBase(PetkitSensorEntity):
     """小佩传感器基类."""
-
-    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -69,15 +66,7 @@ class PetkitSensorBase(CoordinatorEntity, SensorEntity):
         config_entry,
     ) -> None:
         """初始化传感器."""
-        super().__init__(coordinator)
-        self._config_entry = config_entry
-        
-        self._device_id = getattr(coordinator, '_device_id', 'unknown')
-        
-        self._attr_unique_id = f"{self._device_id}_{self.translation_key}"
-        
-        # 直接设置 entity_id
-        self.entity_id = f"sensor.petkit_feeder_{self._device_id}_{self.translation_key}"
+        super().__init__(coordinator, config_entry)
         
         _LOGGER.debug(
             "[PetkitFeeder] Sensor initialized: entity_id=%s, unique_id=%s, device_id=%s, translation_key=%s",
@@ -86,28 +75,6 @@ class PetkitSensorBase(CoordinatorEntity, SensorEntity):
             self._device_id,
             self.translation_key,
         )
-
-    @property
-    def device_info(self):
-        """返回设备信息."""
-        device = self._get_device()
-        model = "Unknown"
-        device_name = DEFAULT_NAME
-        
-        if device:
-            # 获取设备型号
-            if hasattr(device, "device_nfo") and device.device_nfo:
-                model = device.device_nfo.modele_name or "Unknown"
-            # 获取设备名称
-            if hasattr(device, "name") and device.name:
-                device_name = device.name
-        
-        return {
-            "identifiers": {(DOMAIN, self._device_id)},
-            "name": device_name,
-            "manufacturer": "Petkit",
-            "model": model,
-        }
 
     def _get_device(self) -> Feeder | None:
         """获取设备数据."""

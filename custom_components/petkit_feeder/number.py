@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import logging
-from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, DEFAULT_NAME
+from .const import DOMAIN
 from .coordinator import PetkitDataUpdateCoordinator
+from .entities import PetkitNumberEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,10 +35,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class PetkitFeedAmountNumber(CoordinatorEntity, NumberEntity):
+class PetkitFeedAmountNumber(PetkitNumberEntity):
     """出粮克数数字输入."""
 
-    _attr_has_entity_name = True
     _attr_translation_key = "feed_amount"
     _attr_native_min_value = MIN_FEED_AMOUNT
     _attr_native_max_value = MAX_FEED_AMOUNT
@@ -53,15 +51,7 @@ class PetkitFeedAmountNumber(CoordinatorEntity, NumberEntity):
         config_entry,
     ) -> None:
         """初始化数字输入."""
-        super().__init__(coordinator)
-        self._config_entry = config_entry
-        
-        self._device_id = getattr(coordinator, '_device_id', 'unknown')
-        
-        self._attr_unique_id = f"{self._device_id}_feed_amount"
-        
-        # 直接设置 entity_id
-        self.entity_id = f"number.petkit_feeder_{self._device_id}_feed_amount"
+        super().__init__(coordinator, config_entry)
         
         self._attr_name = "出粮克数"
         
@@ -82,25 +72,3 @@ class PetkitFeedAmountNumber(CoordinatorEntity, NumberEntity):
         amount = int(value)
         self.coordinator.set_feed_amount(amount)
         _LOGGER.debug("设置出粮量: %dg", amount)
-
-    @property
-    def device_info(self):
-        """返回设备信息."""
-        device = self.coordinator.data.get("device_info") if self.coordinator.data else None
-        model = "Unknown"
-        device_name = DEFAULT_NAME
-        
-        if device:
-            # 获取设备型号
-            if hasattr(device, "device_nfo") and device.device_nfo:
-                model = device.device_nfo.modele_name or "Unknown"
-            # 获取设备名称
-            if hasattr(device, "name") and device.name:
-                device_name = device.name
-        
-        return {
-            "identifiers": {(DOMAIN, self._device_id)},
-            "name": device_name,
-            "manufacturer": "Petkit",
-            "model": model,
-        }

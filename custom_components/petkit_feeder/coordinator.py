@@ -32,28 +32,47 @@ PETKIT_REQUEST_INTERVAL = 6  # 默认请求间隔（秒）
 PETKIT_REQUEST_INTERVAL_WHITELIST = 0  # 白名单请求间隔（秒）
 
 # 白名单 API 端点（查询类 API，不做限制）
+# 根据 API 文档整理：https://docs/petkit-d4-api.md
 # 这些 API 只读数据，不会改变设备状态
 RATE_LIMIT_WHITELIST = {
-    # 设备相关查询
-    "device/detail",
-    "device/record",
-    "device/stat",
-    "device/ota/check",
+    # 认证相关
+    "user/login",
+    "user/refreshsession",
+    "user/registerPushToken",
     
-    # 家庭/账号相关查询
+    # 设备查询
+    "d4/owndevices",
+    "d4/device_detail",
+    "d4/devicestate",
+    "d4/refreshHomeV2",
+    "device/getDeviceServers",
+    
+    # 喂食相关查询
+    "d4/feed",
+    "d4/dailyFeeds",
+    "d4/feedStatistic",
+    "feederchart/feedStatistic",
+    
+    # 用户查询
+    "user/details2",
+    "user/unreadStatus",
+    
+    # 家庭查询
     "group/family/list",
-    "user/info",
     
-    # 喂食器相关查询
-    "feeding/status",
-    
-    # 媒体相关查询
-    "media/sound/list",
-    "media/live/feed",
-    
-    # 其他查询类 API
-    "iot/device/info",
+    # OTA 检查
+    "d4/ota_check",
 }
+
+# 以下 API 不在白名单，需要 6 秒限制：
+# - d4/saveFeed: 保存喂食计划
+# - d4/saveDailyFeed: 手动出粮
+# - d4/removeDailyFeed: 删除/禁用喂食计划项
+# - d4/restoreDailyFeed: 恢复喂食计划项
+# - d4/updateSettings: 更新设备设置
+# - d4/replenishedFood: 补粮确认
+# - d4/desiccant_reset: 重置干燥剂
+# - d4/calibration: 校准出粮量
 
 _rate_limit_lock: asyncio.Lock | None = None
 _last_request_time: float | None = None

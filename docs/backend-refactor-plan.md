@@ -404,43 +404,43 @@ async def get_localized_message(hass, key: str) -> str:
 
 ## 执行步骤
 
-### 阶段 1：创建基础模块（低风险）
+### 阶段 1：创建基础模块（低风险）✅ 已完成
 
-**预估时间**：2 小时
+**实际用时**：1 小时
 
-1. **创建 utils/ 模块**
-   - 提取 `timezone.py`：时区处理函数
-   - 提取 `datetime.py`：日期时间处理函数
-   - 更新 `coordinator.py` 和其他文件的导入
+1. **创建 utils/ 模块** ✅
+   - `timezone.py`：时区处理函数
+   - `datetime.py`：日期时间处理函数
+   
+2. **创建 entities/ 模块** ✅
+   - `base.py`：实体基类，统一 `device_info` 和 `_get_device`
+   - `sensor.py`：传感器基类
+   - `binary_sensor.py`：二进制传感器基类
+   - `button.py`：按钮基类
+   - `switch.py`：开关基类
+   - `number.py`：数字输入基类
 
-2. **创建 entities/base.py**
-   - 提取 `PetkitEntity` 基类
-   - 统一 `device_info` 属性
-   - 统一 `_get_device()` 方法
+### 阶段 2：提取实体基类（低风险）✅ 已完成
 
-3. **验证测试**
-   - 运行 HA，确认功能正常
-   - 检查日志无错误
+**实际用时**：0.5 小时
 
-### 阶段 2：提取实体基类（低风险）
+1. **更新 sensor.py** ✅
+   - 使用 `PetkitSensorEntity` 基类
+   - 移除重复的 `device_info` 属性
 
-**预估时间**：1.5 小时
+2. **更新 binary_sensor.py** ✅
+   - 使用 `PetkitBinarySensorEntity` 基类
 
-1. **创建 entities/sensor.py**
-   - 提取 `PetkitSensorEntity` 基类
-   - 更新 `sensor.py` 使用基类
+3. **更新 button.py** ✅
+   - 使用 `PetkitButtonEntity` 基类
 
-2. **创建 entities/binary_sensor.py**
-   - 提取 `PetkitBinarySensorEntity` 基类
-   - 更新 `binary_sensor.py` 使用基类
+4. **更新 switch.py** ✅
+   - 使用 `PetkitSwitchEntity` 基类
 
-3. **创建 entities/button.py、entities/switch.py、entities/number.py**
-   - 同上
+5. **更新 number.py** ✅
+   - 使用 `PetkitNumberEntity` 基类
 
-4. **验证测试**
-   - 检查所有实体是否正常工作
-
-### 阶段 3：拆分 coordinator（中等风险）
+### 阶段 3：拆分 coordinator（中等风险）⏳ 待执行
 
 **预估时间**：3 小时
 

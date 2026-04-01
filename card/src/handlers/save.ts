@@ -1,7 +1,7 @@
 /** 保存处理 */
 
-import { PendingChange } from '../../data';
-import { EditingItem, OriginalItemData } from '../../state';
+import { PendingChange } from '../data';
+import { EditingItem, OriginalItemData } from '../state';
 
 /**
  * 检查是否有变更

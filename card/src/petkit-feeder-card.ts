@@ -1,11 +1,11 @@
 /** 小佩喂食器卡片 - 主组件 */
 
-import { LitElement, html, css, svg } from 'lit';
+import { LitElement, html, svg } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { PetkitSoloCardConfig, TimelineItem, TodaySummary, FeedingPlanItem, FeedingRecord } from './types';
-import { getEntityId, getTodayDate, getTodayWeekday, TIME_TOLERANCE, SAVE_DELAY, DEFAULT_FEED_AMOUNT, WEEKDAY_NAMES } from './utils';
+import { PetkitSoloCardConfig, TimelineItem, TodaySummary } from './types';
+import { getEntityId, getTodayWeekday } from './utils';
 import { processTodayData, PendingChange } from './data';
 import { combineStyles } from './styles';
 

@@ -1,8 +1,8 @@
 /** 编辑事件处理 */
 
 import { TimelineItem } from '../types';
-import { PendingChange } from '../../data';
-import { EditField, EditingItem, OriginalItemData } from '../../state';
+import { PendingChange } from '../data';
+import { EditField, EditingItem, OriginalItemData } from '../state';
 
 /**
  * 开始编辑

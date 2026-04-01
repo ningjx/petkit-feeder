@@ -2,8 +2,8 @@
 
 import { HomeAssistant } from 'custom-card-helpers';
 import { TimelineItem } from '../types';
-import { PendingChange } from '../../data';
-import { getTodayWeekdayNumber } from '../../utils';
+import { PendingChange } from '../data';
+import { getTodayWeekdayNumber } from '../utils';
 
 /**
  * 切换计划启用状态
@@ -83,7 +83,7 @@ export async function deleteFeedingItem(
   } catch (error) {
     console.error('[PetkitFeeder] 删除计划失败:', error);
     pendingChanges.delete(item.itemId);
-    onError?.();
+    onError?.(error);
   }
 }
 

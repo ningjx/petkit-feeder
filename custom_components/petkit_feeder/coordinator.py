@@ -26,7 +26,7 @@ from .const import (
 )
 from .coordinators.rate_limiter import RateLimiter
 from .utils.timezone import get_timezone_offset
-from .models import DeviceFactory, PetkitDevice
+from .devices import DeviceFactory, PetkitDevice
 
 _LOGGER = logging.getLogger(__name__)
 

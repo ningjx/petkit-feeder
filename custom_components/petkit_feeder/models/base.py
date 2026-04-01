@@ -185,7 +185,9 @@ class PetkitDevice(ABC):
         time: str,
         amount: int,
         name: str,
-        api_client: Any
+        api_client: Any,
+        sync_all_days: bool = True,
+        existing_feed_daily_list: list | None = None,
     ) -> bool:
         """添加喂食计划项.
         
@@ -195,6 +197,8 @@ class PetkitDevice(ABC):
             amount: 出粮量
             name: 计划名称
             api_client: API 客户端
+            sync_all_days: 是否同步到一周所有天
+            existing_feed_daily_list: 已有的喂食计划列表
             
         Returns:
             是否成功
@@ -208,7 +212,9 @@ class PetkitDevice(ABC):
         time: str | None,
         amount: int | None,
         name: str | None,
-        api_client: Any
+        api_client: Any,
+        sync_all_days: bool = True,
+        existing_feed_daily_list: list | None = None,
     ) -> bool:
         """更新喂食计划项.
         
@@ -219,6 +225,8 @@ class PetkitDevice(ABC):
             amount: 出粮量
             name: 计划名称
             api_client: API 客户端
+            sync_all_days: 是否同步到一周所有天
+            existing_feed_daily_list: 已有的喂食计划列表
             
         Returns:
             是否成功
@@ -229,7 +237,9 @@ class PetkitDevice(ABC):
         self,
         day: int,
         item_id: str,
-        api_client: Any
+        api_client: Any,
+        sync_all_days: bool = True,
+        existing_feed_daily_list: list | None = None,
     ) -> bool:
         """删除喂食计划项.
         
@@ -237,6 +247,8 @@ class PetkitDevice(ABC):
             day: 星期几（1-7）
             item_id: 计划项 ID
             api_client: API 客户端
+            sync_all_days: 是否同步到一周所有天
+            existing_feed_daily_list: 已有的喂食计划列表
             
         Returns:
             是否成功
@@ -248,7 +260,7 @@ class PetkitDevice(ABC):
         day: int,
         item_id: str,
         enabled: bool,
-        api_client: Any
+        api_client: Any,
     ) -> bool:
         """启用/禁用喂食计划项.
         
@@ -266,7 +278,7 @@ class PetkitDevice(ABC):
     async def manual_feed(
         self,
         amount: int,
-        api_client: Any
+        api_client: Any,
     ) -> bool:
         """手动喂食.
         
@@ -283,7 +295,7 @@ class PetkitDevice(ABC):
         self,
         key: str,
         value: int,
-        api_client: Any
+        api_client: Any,
     ) -> bool:
         """更新设备设置.
         
@@ -299,7 +311,7 @@ class PetkitDevice(ABC):
     
     async def get_photo(
         self,
-        api_client: Any
+        api_client: Any,
     ) -> bytes | None:
         """获取照片（如果有摄像头）.
         

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import socket
 from datetime import datetime, timedelta, timezone
 from typing import Any
 import asyncio
@@ -25,6 +26,7 @@ from .const import (
 )
 from .coordinators.rate_limiter import RateLimiter
 from .utils.timezone import get_timezone_offset
+from .models import DeviceFactory, PetkitDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,6 +57,7 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         self._timezone: float = 8.0
         self._timezone_str: str = "Asia/Shanghai"
         self._plan_refresh_unsub: Any = None
+        self._device: PetkitDevice | None = None
         
         self._init_timezone()
         
@@ -241,6 +244,8 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             
             if not device_data:
                 raise UpdateFailed("未找到任何喂食器设备")
+            
+            self._device = DeviceFactory.create(device_data)
 
             # 记录一次设备对象的可用属性，方便调试实体取值
             try:
@@ -412,6 +417,11 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         """获取当前设置的出粮量."""
         return self._feed_amount
 
+    @property
+    def device(self) -> PetkitDevice | None:
+        """获取设备实例."""
+        return self._device
+
     def get_current_datetime(self) -> datetime:
         """获取当前时区的日期时间.
         
@@ -485,79 +495,48 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             return utc_datetime_str
 
     async def manual_feed(self, amount: int | None = None) -> bool:
-        """手动出粮.
-        
-        Args:
-            amount: 出粮量（克），如果为 None 则使用已设置的值
-            
-        Returns:
-            是否成功
-        """
-        from .pypetkitapi.command import FeederCommand
-        
-        if not self._api:
-            _LOGGER.error("API 未初始化")
+        """手动出粮."""
+        if not self._api or not self._device:
+            _LOGGER.error("API 或设备实例未初始化")
             return False
         
-        # 获取出粮量
         feed_amount = amount if amount is not None else self._feed_amount
         
         _LOGGER.info("手动出粮: %dg", feed_amount)
         
         try:
-            result = await self._api.send_api_request(
-                device_id=int(self._device_id),
-                action=FeederCommand.MANUAL_FEED,
-                setting={"amount": feed_amount},
+            result = await self._device.manual_feed(
+                amount=feed_amount,
+                api_client=self._api,
             )
             
             if result:
-                _LOGGER.info("手动出粮成功: %dg", feed_amount)
-                # 刷新数据
                 await self.async_request_refresh()
-            else:
-                _LOGGER.warning("手动出粮失败: %dg", feed_amount)
             
             return result
-            
         except Exception as err:
             _LOGGER.error("手动出粮失败: %s", err, exc_info=True)
             return False
 
     async def update_setting(self, key: str, value: int) -> bool:
-        """更新设备设置.
-        
-        Args:
-            key: 设置项名称 (lightMode, foodWarn, feedNotify, manualLock)
-            value: 值 (0=关, 1=开)
-            
-        Returns:
-            是否成功
-        """
-        from .pypetkitapi.command import DeviceCommand
-        
-        if not self._api:
-            _LOGGER.error("API 未初始化")
+        """更新设备设置."""
+        if not self._api or not self._device:
+            _LOGGER.error("API 或设备实例未初始化")
             return False
         
         _LOGGER.info("更新设备设置: %s = %d", key, value)
         
         try:
-            result = await self._api.send_api_request(
-                device_id=int(self._device_id),
-                action=DeviceCommand.UPDATE_SETTING,
-                setting={key: value},
+            result = await self._device.update_setting(
+                key=key,
+                value=value,
+                api_client=self._api,
             )
             
             if result:
-                _LOGGER.info("更新设备设置成功: %s = %d", key, value)
-                # 刷新数据
                 await self.async_request_refresh()
-            else:
-                _LOGGER.warning("更新设备设置失败: %s = %d", key, value)
             
             return result
-            
         except Exception as err:
             _LOGGER.error("更新设备设置失败: %s", err, exc_info=True)
             return False
@@ -679,6 +658,42 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         await self.async_request_refresh()
         _LOGGER.info("喂食计划更新成功：周%d，共%d项", day, len(schedule_items))
 
+    def _get_feed_daily_list_data(self) -> list:
+        """获取已有的喂食计划数据（转换为 dict 格式）.
+        
+        Returns:
+            喂食计划列表（dict 格式）
+        """
+        device = self.data.get("device_info") if self.data else None
+        if not device:
+            return []
+        
+        multi_feed_item = getattr(device, "multi_feed_item", None)
+        if not multi_feed_item:
+            return []
+        
+        feed_daily_list = getattr(multi_feed_item, "feed_daily_list", [])
+        
+        result = []
+        for daily_list in feed_daily_list:
+            items = getattr(daily_list, "items", []) or []
+            items_data = [
+                {
+                    "time": getattr(item, "time", 0),
+                    "amount": getattr(item, "amount", 0),
+                    "name": getattr(item, "name", ""),
+                }
+                for item in items
+            ]
+            
+            result.append({
+                "repeats": getattr(daily_list, "repeats", 0),
+                "suspended": getattr(daily_list, "suspended", 0),
+                "items": items_data,
+            })
+        
+        return result
+
     async def add_feeding_item(
         self,
         day: int,
@@ -687,83 +702,28 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         name: str = "",
         sync_all_days: bool = True,
     ) -> bool:
-        """新增喂食计划项（同步一周）.
-        
-        Args:
-            day: 1-7，周一到周日（起始天）
-            time_str: 时间字符串，格式 HH:MM
-            amount: 出粮量（克）
-            name: 计划名称
-            sync_all_days: 是否同步到一周所有天
-            
-        Returns:
-            是否成功
-        """
-        if not self._api:
-            _LOGGER.error("API 未初始化")
+        """新增喂食计划项（同步一周）."""
+        if not self._api or not self._device:
+            _LOGGER.error("API 或设备实例未初始化")
             return False
-        
-        device = self.data.get("device_info") if self.data else None
-        if not device:
-            _LOGGER.error("设备数据不可用")
-            return False
-        
-        time_seconds = self._parse_time_to_seconds(time_str)
-        
-        multi_feed_item = getattr(device, "multi_feed_item", None)
-        if not multi_feed_item:
-            _LOGGER.error("设备不支持多日计划")
-            return False
-        
-        feed_daily_list = list(getattr(multi_feed_item, "feed_daily_list", []))
-        
-        from .pypetkitapi.feeder_container import FeedDailyList, FeedItem
-        
-        today_items = []
-        for daily_list in feed_daily_list:
-            if getattr(daily_list, "repeats", None) == day:
-                today_items = list(getattr(daily_list, "items", []))
-                break
-        
-        for item in today_items:
-            if getattr(item, "time", None) == time_seconds:
-                _LOGGER.warning("该时间点已存在计划项: %s", time_str)
-                return False
-        
-        new_item = FeedItem(
-            time=time_seconds,
-            amount=amount,
-            id=str(time_seconds),
-            name=name,
-        )
-        today_items.append(new_item)
-        today_items.sort(key=lambda x: getattr(x, "time", 0))
-        
-        if sync_all_days:
-            new_feed_daily_list = []
-            for target_day in range(1, 8):
-                new_daily = FeedDailyList(
-                    items=[FeedItem(
-                        time=getattr(item, "time"),
-                        amount=getattr(item, "amount"),
-                        id=str(getattr(item, "time")),
-                        name=getattr(item, "name", ""),
-                    ) for item in today_items],
-                    repeats=target_day,
-                    suspended=0,
-                )
-                new_feed_daily_list.append(new_daily)
-            feed_daily_list = new_feed_daily_list
-        else:
-            for daily_list in feed_daily_list:
-                if getattr(daily_list, "repeats", None) == day:
-                    daily_list.items = today_items
-                    break
         
         try:
-            await self._save_feed_plan(feed_daily_list)
-            _LOGGER.info("新增喂食计划成功: %s %dg，同步到一周", time_str, amount)
-            return True
+            existing_feed_daily_list = self._get_feed_daily_list_data()
+            
+            result = await self._device.add_feeding_item(
+                day=day,
+                time=time_str,
+                amount=amount,
+                name=name,
+                api_client=self._api,
+                sync_all_days=sync_all_days,
+                existing_feed_daily_list=existing_feed_daily_list,
+            )
+            
+            if result:
+                await self.async_request_refresh()
+            
+            return result
         except Exception as err:
             _LOGGER.error("新增喂食计划失败: %s", err, exc_info=True)
             return False
@@ -774,73 +734,26 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         item_id: str,
         sync_all_days: bool = True,
     ) -> bool:
-        """删除喂食计划项（同步一周）.
-        
-        Args:
-            day: 1-7，周一到周日（起始天）
-            item_id: 计划项 ID（时间秒数）
-            sync_all_days: 是否同步到一周所有天
-            
-        Returns:
-            是否成功
-        """
-        if not self._api:
-            _LOGGER.error("API 未初始化")
+        """删除喂食计划项（同步一周）."""
+        if not self._api or not self._device:
+            _LOGGER.error("API 或设备实例未初始化")
             return False
-        
-        device = self.data.get("device_info") if self.data else None
-        if not device:
-            _LOGGER.error("设备数据不可用")
-            return False
-        
-        multi_feed_item = getattr(device, "multi_feed_item", None)
-        if not multi_feed_item:
-            _LOGGER.error("设备不支持多日计划")
-            return False
-        
-        feed_daily_list = list(getattr(multi_feed_item, "feed_daily_list", []))
-        
-        from .pypetkitapi.feeder_container import FeedDailyList, FeedItem
-        
-        raw_item_id = item_id.lstrip("s") if item_id.startswith("s") else item_id
-        
-        today_items = []
-        for daily_list in feed_daily_list:
-            if getattr(daily_list, "repeats", None) == day:
-                today_items = list(getattr(daily_list, "items", []))
-                break
-        
-        new_today_items = [item for item in today_items if str(getattr(item, "time", "")) != raw_item_id]
-        
-        if len(new_today_items) == len(today_items):
-            _LOGGER.warning("未找到要删除的计划项: %s", item_id)
-            return False
-        
-        if sync_all_days:
-            new_feed_daily_list = []
-            for target_day in range(1, 8):
-                new_daily = FeedDailyList(
-                    items=[FeedItem(
-                        time=getattr(item, "time"),
-                        amount=getattr(item, "amount"),
-                        id=str(getattr(item, "time")),
-                        name=getattr(item, "name", ""),
-                    ) for item in new_today_items],
-                    repeats=target_day,
-                    suspended=0,
-                )
-                new_feed_daily_list.append(new_daily)
-            feed_daily_list = new_feed_daily_list
-        else:
-            for daily_list in feed_daily_list:
-                if getattr(daily_list, "repeats", None) == day:
-                    daily_list.items = new_today_items
-                    break
         
         try:
-            await self._save_feed_plan(feed_daily_list)
-            _LOGGER.info("删除喂食计划成功: %s，同步到一周", item_id)
-            return True
+            existing_feed_daily_list = self._get_feed_daily_list_data()
+            
+            result = await self._device.remove_feeding_item(
+                day=day,
+                item_id=item_id,
+                api_client=self._api,
+                sync_all_days=sync_all_days,
+                existing_feed_daily_list=existing_feed_daily_list,
+            )
+            
+            if result:
+                await self.async_request_refresh()
+            
+            return result
         except Exception as err:
             _LOGGER.error("删除喂食计划失败: %s", err, exc_info=True)
             return False
@@ -851,39 +764,23 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         item_id: str,
         enabled: bool,
     ) -> bool:
-        """启用/禁用喂食计划项.
-        
-        Args:
-            day: 1-7，周一到周日
-            item_id: 计划项 ID
-            enabled: True 启用，False 禁用
-            
-        Returns:
-            是否成功
-        """
-        from .pypetkitapi.command import FeederCommand
-        
-        if not self._api:
-            _LOGGER.error("API 未初始化")
+        """启用/禁用喂食计划项."""
+        if not self._api or not self._device:
+            _LOGGER.error("API 或设备实例未初始化")
             return False
         
         try:
-            action = FeederCommand.RESTORE_DAILY_FEED if enabled else FeederCommand.REMOVE_DAILY_FEED
-            
-            result = await self._api.send_api_request(
-                device_id=int(self._device_id),
-                action=action,
-                setting={"id": item_id},
+            result = await self._device.toggle_feeding_item(
+                day=day,
+                item_id=item_id,
+                enabled=enabled,
+                api_client=self._api,
             )
             
             if result:
                 await self.async_request_refresh()
-                _LOGGER.info("切换喂食计划状态成功: 周%d %s %s", day, item_id, "启用" if enabled else "禁用")
-            else:
-                _LOGGER.warning("切换喂食计划状态失败: 周%d %s", day, item_id)
             
             return result
-            
         except Exception as err:
             _LOGGER.error("切换喂食计划状态失败: %s", err, exc_info=True)
             return False
@@ -897,171 +794,32 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         name: str | None = None,
         sync_all_days: bool = True,
     ) -> bool:
-        """更新喂食计划项（同步一周）.
-        
-        Args:
-            day: 1-7，周一到周日（起始天）
-            item_id: 计划项 ID（时间秒数）
-            time_str: 新时间（可选）
-            amount: 新出粮量（可选）
-            name: 新名称（可选）
-            sync_all_days: 是否同步到一周所有天
-            
-        Returns:
-            是否成功
-        """
-        if not self._api:
-            _LOGGER.error("API 未初始化")
+        """更新喂食计划项（同步一周）."""
+        if not self._api or not self._device:
+            _LOGGER.error("API 或设备实例未初始化")
             return False
-        
-        device = self.data.get("device_info") if self.data else None
-        if not device:
-            _LOGGER.error("设备数据不可用")
-            return False
-        
-        multi_feed_item = getattr(device, "multi_feed_item", None)
-        if not multi_feed_item:
-            _LOGGER.error("设备不支持多日计划")
-            return False
-        
-        feed_daily_list = list(getattr(multi_feed_item, "feed_daily_list", []))
-        
-        from .pypetkitapi.feeder_container import FeedDailyList, FeedItem
-        
-        raw_item_id = item_id.lstrip("s") if item_id.startswith("s") else item_id
-        
-        today_items = []
-        for daily_list in feed_daily_list:
-            if getattr(daily_list, "repeats", None) == day:
-                today_items = list(getattr(daily_list, "items", []))
-                break
-        
-        found = False
-        for i, item in enumerate(today_items):
-            if str(getattr(item, "time", "")) == raw_item_id:
-                found = True
-                new_time = self._parse_time_to_seconds(time_str) if time_str else getattr(item, "time")
-                new_amount = amount if amount is not None else getattr(item, "amount")
-                new_name = name if name is not None else getattr(item, "name", "")
-                today_items[i] = FeedItem(
-                    time=new_time,
-                    amount=new_amount,
-                    id=str(new_time),
-                    name=new_name,
-                )
-                today_items.sort(key=lambda x: getattr(x, "time", 0))
-                break
-        
-        if not found:
-            _LOGGER.warning("未找到计划项: 周%d %s", day, item_id)
-            return False
-        
-        if sync_all_days:
-            new_feed_daily_list = []
-            for target_day in range(1, 8):
-                new_daily = FeedDailyList(
-                    items=[FeedItem(
-                        time=getattr(item, "time"),
-                        amount=getattr(item, "amount"),
-                        id=str(getattr(item, "time")),
-                        name=getattr(item, "name", ""),
-                    ) for item in today_items],
-                    repeats=target_day,
-                    suspended=0,
-                )
-                new_feed_daily_list.append(new_daily)
-            feed_daily_list = new_feed_daily_list
-        else:
-            for daily_list in feed_daily_list:
-                if getattr(daily_list, "repeats", None) == day:
-                    daily_list.items = today_items
-                    break
         
         try:
-            await self._save_feed_plan(feed_daily_list)
-            _LOGGER.info("更新喂食计划成功: %s，同步到一周", item_id)
-            return True
+            existing_feed_daily_list = self._get_feed_daily_list_data()
+            
+            result = await self._device.update_feeding_item(
+                day=day,
+                item_id=item_id,
+                time=time_str,
+                amount=amount,
+                name=name,
+                api_client=self._api,
+                sync_all_days=sync_all_days,
+                existing_feed_daily_list=existing_feed_daily_list,
+            )
+            
+            if result:
+                await self.async_request_refresh()
+            
+            return result
         except Exception as err:
             _LOGGER.error("更新喂食计划失败: %s", err, exc_info=True)
             return False
-
-    async def _save_feed_plan(self, feed_daily_list: list) -> None:
-        """保存喂食计划到服务器.
-        
-        Args:
-            feed_daily_list: 喂食计划列表
-        """
-        if not self._api:
-            raise ValueError("API 未初始化")
-        
-        device = self.data.get("device_info") if self.data else None
-        if not device:
-            raise ValueError("设备数据不可用")
-        
-        device_nfo = getattr(device, "device_nfo", None)
-        device_type = getattr(device_nfo, "device_type", "d4") if device_nfo else "d4"
-        device_type_id = getattr(device_nfo, "type", 11) if device_nfo else 11
-        
-        feed_list_data = []
-        for daily_list in feed_daily_list:
-            items = getattr(daily_list, "items", []) or []
-            items_data = []
-            total_amount = 0
-            
-            for item in items:
-                amount = getattr(item, "amount", 0)
-                total_amount += amount
-                is_first = len(items_data) == 0
-                items_data.append({
-                    "amount": amount,
-                    "amount1": 0,
-                    "amount2": 0,
-                    "deviceId": int(self._device_id) if is_first else 0,
-                    "deviceType": device_type_id if is_first else 0,
-                    "id": getattr(item, "time", 0),
-                    "name": getattr(item, "name", ""),
-                    "petAmount": [],
-                    "time": getattr(item, "time", 0),
-                })
-            
-            repeats = getattr(daily_list, "repeats", 0)
-            feed_list_data.append({
-                "count": len(items_data),
-                "items": items_data,
-                "repeats": str(repeats),
-                "suspended": getattr(daily_list, "suspended", 0),
-                "totalAmount": total_amount,
-                "totalAmount1": 0,
-                "totalAmount2": 0,
-            })
-        
-        import json
-        response = await self._api.req.request(
-            method="POST",
-            url=f"{device_type}/saveFeed",
-            data={
-                "deviceId": int(self._device_id),
-                "feedDailyList": json.dumps(feed_list_data),
-            },
-            headers=await self._api.get_session_id(),
-        )
-        
-        _LOGGER.debug("保存喂食计划响应: %s", response)
-        await self.async_request_refresh()
-
-    def _parse_time_to_seconds(self, time_str: str) -> int:
-        """将时间字符串转换为秒数.
-        
-        Args:
-            time_str: 时间字符串，格式 HH:MM
-            
-        Returns:
-            从 00:00 开始的秒数
-        """
-        parts = time_str.split(":")
-        hours = int(parts[0]) if len(parts) >= 1 else 0
-        minutes = int(parts[1]) if len(parts) >= 2 else 0
-        return hours * 3600 + minutes * 60
 
     def _parse_feeding_history(self, device_records) -> dict:
         """解析喂食历史记录.

@@ -454,9 +454,35 @@ async def get_localized_message(hass, key: str) -> str:
    - 使用 utils.timezone.get_timezone_offset
    - 移除重复代码约 70 行
 
-### 阶段 4：创建设备型号抽象层（中等风险）⏭️ 跳过
+### 阶段 4：创建设备型号抽象层（中等风险）✅ 已完成
 
-**原因**：当前只支持 D4 设备，抽象层的收益不明显。可在需要支持新设备型号时再实现。
+**实际用时**：1.5 小时
+
+1. **创建 models/base.py** ✅
+   - `DeviceType` 枚举（D3、D4、D4S、Mini）
+   - `DeviceCapabilities` 设备能力配置
+   - `DeviceEntityConfig` 实体配置
+   - `PetkitDevice` 抽象基类
+
+2. **创建 models/d4.py** ✅
+   - `D4Device` 类（Fresh Element Solo）
+   - 实现所有喂食服务方法
+   - 完整的实体配置
+
+3. **创建占位设备** ✅
+   - `models/d3.py`: D3Device（待实现具体逻辑）
+   - `models/d4s.py`: D4SDevice（待实现具体逻辑）
+   - `models/mini.py`: MiniDevice（待实现具体逻辑）
+
+4. **创建 models/factory.py** ✅
+   - `DeviceFactory` 设备工厂
+   - 自动检测设备类型
+   - 创建设备实例
+
+**设计说明**：
+- 每个设备型号可以配置自己的传感器列表、服务实现
+- 新增设备只需创建新的设备类并注册到工厂
+- 服务方法在设备类中实现，支持不同设备的差异化逻辑
 
 ### 阶段 5：服务模块重构（低风险）✅ 已完成
 
@@ -528,11 +554,12 @@ async def get_localized_message(hass, key: str) -> str:
 
 | 模块 | 文件数 | 行数 |
 |-----|-------|------|
-| utils/ | 3 | 180 |
+| utils/ | 4 | 260 |
 | entities/ | 6 | 150 |
 | coordinators/ | 1 | 180 |
-| services/ | 2 | 110 |
-| **总计** | **12** | **620** |
+| services/ | 3 | 200 |
+| models/ | 6 | 815 |
+| **总计** | **20** | **1605** |
 
 ### 文件结构
 
@@ -558,6 +585,14 @@ custom_components/petkit_feeder/
 │   ├── __init__.py
 │   ├── schemas.py           # 服务 Schema
 │   └── feeding.py           # 喂食服务
+├── models/                  # 设备型号抽象层
+│   ├── __init__.py
+│   ├── base.py              # 设备基类
+│   ├── d3.py                # D3 设备
+│   ├── d4.py                # D4 设备（已实现）
+│   ├── d4s.py               # D4S 设备
+│   ├── mini.py              # Mini 设备
+│   └── factory.py           # 设备工厂
 └── translations/
     ├── en.json              # 英文翻译（已扩充）
     └── zh-Hans.json         # 中文翻译（已扩充）

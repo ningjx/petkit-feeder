@@ -28,9 +28,11 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 # 全局请求节流配置（单位：秒）
-PETKIT_REQUEST_INTERVAL = 6
+PETKIT_QUERY_INTERVAL = 0      # 查询类API间隔（0=不限制）
+PETKIT_COMMAND_INTERVAL = 6    # 设置类API间隔
 _rate_limit_lock: asyncio.Lock | None = None
-_last_request_time: float | None = None
+_last_query_time: float | None = None
+_last_command_time: float | None = None
 
 
 class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
@@ -176,8 +178,13 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         self._wrap_api_with_rate_limiter()
 
     def _wrap_api_with_rate_limiter(self) -> None:
-        """为 PetKitClient 的 request 方法增加全局节流（排队 + 间隔）."""
-        global _rate_limit_lock, _last_request_time
+        """为 PetKitClient 的 request 方法增加全局节流（排队 + 间隔）.
+        
+        优化策略：
+        - 查询类请求（GET）：不限制（间隔0秒）
+        - 设置类请求（POST/PUT/DELETE）：限制间隔6秒
+        """
+        global _rate_limit_lock, _last_query_time, _last_command_time
 
         if not self._api or not getattr(self._api, "req", None):
             return
@@ -185,33 +192,52 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         # 只初始化一次全局锁
         if _rate_limit_lock is None:
             _rate_limit_lock = asyncio.Lock()
-            _last_request_time = None
+            _last_query_time = None
+            _last_command_time = None
 
         # pypetkitapi 通过 self.req.request 发送 HTTP 请求
         original_request = self._api.req.request
 
-        async def rate_limited_request(self_req, *args, **kwargs):
-            """带全局间隔的 request 包装器."""
+        async def rate_limited_request(self_req, method: str, *args, **kwargs):
+            """带全局间隔的 request 包装器.
+            
+            Args:
+                method: HTTP 方法（GET, POST, PUT, DELETE 等）
+            """
+            global _last_query_time, _last_command_time
             assert _rate_limit_lock is not None
-            global _last_request_time
 
+            # 判断是查询类还是设置类
+            is_query = method.upper() == "GET"
+            interval = PETKIT_QUERY_INTERVAL if is_query else PETKIT_COMMAND_INTERVAL
+            
             async with _rate_limit_lock:
                 now = asyncio.get_running_loop().time()
-                if _last_request_time is not None:
-                    # 距上次请求的时间差
-                    delta = now - _last_request_time
-                    wait_for = PETKIT_REQUEST_INTERVAL - delta
-                    if wait_for > 0:
-                        _LOGGER.debug(
-                            "PetKit API 触发节流，等待 %.2f 秒后再发送请求", wait_for
-                        )
-                        await asyncio.sleep(wait_for)
+                
+                # 如果间隔为0，跳过限制
+                if interval > 0:
+                    last_time = _last_query_time if is_query else _last_command_time
+                    if last_time is not None:
+                        delta = now - last_time
+                        wait_for = interval - delta
+                        if wait_for > 0:
+                            request_type = "查询" if is_query else "设置"
+                            _LOGGER.debug(
+                                "PetKit API 触发节流（%s类），等待 %.2f 秒后再发送请求: %s",
+                                request_type, wait_for, method
+                            )
+                            await asyncio.sleep(wait_for)
 
                 # 真正发送请求
-                result = await original_request(*args, **kwargs)
+                result = await original_request(method, *args, **kwargs)
 
-                # 记录本次请求时间
-                _last_request_time = asyncio.get_running_loop().time()
+                # 记录本次请求时间（只有间隔>0时才记录）
+                if interval > 0:
+                    if is_query:
+                        _last_query_time = asyncio.get_running_loop().time()
+                    else:
+                        _last_command_time = asyncio.get_running_loop().time()
+                
                 return result
 
         # 绑定为实例方法，替换底层 req 对象的 request 方法

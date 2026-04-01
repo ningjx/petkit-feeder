@@ -288,11 +288,11 @@ petkit-ha/
 │   ├── setup.sh          # 主部署脚本
 │   ├── README.md         # 脚本说明（本文件）
 │   └── check_code.py     # 代码检查工具
-├── card/                  # 前端卡片
+├── petkit_feeder_card/   # 前端卡片
 │   ├── src/
 │   ├── dist/
 │   └── package.json
-├── custom_components/     # 后端插件
+├── custom_components/    # 后端插件
 │   └── petkit_feeder/
 └── ...
 ```

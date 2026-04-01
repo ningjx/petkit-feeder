@@ -38,7 +38,7 @@ WWW_DIR="$HA_CONFIG_DIR/www"
 HA_CONTAINER_NAME="${HA_CONTAINER_NAME:-homeassistant}"
 
 # 前端目录
-CARD_DIR="$PROJECT_ROOT/card"
+CARD_DIR="$PROJECT_ROOT/petkit_feeder_card"
 CARD_DIST_DIR="$CARD_DIR/dist"
 
 #-------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ build_frontend() {
     log_step "构建前端卡片..."
     
     if [ ! -d "$CARD_DIR" ]; then
-        log_warning "card 目录不存在，跳过前端构建"
+        log_warning "petkit_feeder_card 目录不存在，跳过前端构建"
         return 0
     fi
     

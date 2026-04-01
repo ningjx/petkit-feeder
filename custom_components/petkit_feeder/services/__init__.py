@@ -1,0 +1,19 @@
+"""服务模块汇总"""
+
+from .schemas import (
+    ADD_FEEDING_ITEM_SCHEMA,
+    REMOVE_FEEDING_ITEM_SCHEMA,
+    TOGGLE_FEEDING_ITEM_SCHEMA,
+    UPDATE_FEEDING_ITEM_SCHEMA,
+    SERVICE_SCHEMAS,
+)
+from .feeding import FeedingService
+
+__all__ = [
+    "ADD_FEEDING_ITEM_SCHEMA",
+    "REMOVE_FEEDING_ITEM_SCHEMA",
+    "TOGGLE_FEEDING_ITEM_SCHEMA",
+    "UPDATE_FEEDING_ITEM_SCHEMA",
+    "SERVICE_SCHEMAS",
+    "FeedingService",
+]

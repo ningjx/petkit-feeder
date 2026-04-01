@@ -24,6 +24,7 @@ from .const import (
     PLAN_REFRESH_DELAY,
 )
 from .coordinators.rate_limiter import RateLimiter
+from .utils.timezone import get_timezone_offset
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         
         if ha_timezone:
             self._timezone_str = ha_timezone
-            self._timezone = self._get_timezone_offset(ha_timezone)
+            self._timezone = get_timezone_offset(ha_timezone)
             
             # 详细日志
             _LOGGER.info(
@@ -103,7 +104,7 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         # 第二优先级：根据地区分配默认时区
         region_timezone = REGION_TIMEZONE_MAP.get(self._region, DEFAULT_TIMEZONE)
         self._timezone_str = region_timezone
-        self._timezone = self._get_timezone_offset(region_timezone)
+        self._timezone = get_timezone_offset(region_timezone)
         
         # 详细日志
         _LOGGER.info(
@@ -119,38 +120,6 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             self._timezone,
             datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         )
-
-    @staticmethod
-    def _get_timezone_offset(timezone_str: str) -> float:
-        """将时区字符串转换为 UTC 偏移小时数.
-        
-        Args:
-            timezone_str: 时区名称，如 "Asia/Shanghai"
-            
-        Returns:
-            UTC 偏移小时数，如 8.0（考虑夏令时）
-        """
-        try:
-            import zoneinfo
-            from datetime import datetime
-            
-            tz = zoneinfo.ZoneInfo(timezone_str)
-            now = datetime.now(tz)
-            offset = now.utcoffset()
-            
-            if offset:
-                offset_hours = offset.total_seconds() / 3600
-                _LOGGER.debug("时区 %s 当前偏移：UTC%s%.1f", 
-                             timezone_str,
-                             "+" if offset_hours >= 0 else "",
-                             offset_hours)
-                return offset_hours
-            
-            return 8.0
-            
-        except Exception as err:
-            _LOGGER.warning("时区偏移转换失败：%s，使用默认 UTC+8", err)
-            return 8.0
 
     async def _async_setup(self) -> None:
         """设置协调器（在初次刷新前调用）."""

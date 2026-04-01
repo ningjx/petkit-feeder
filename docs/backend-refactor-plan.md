@@ -440,7 +440,33 @@ async def get_localized_message(hass, key: str) -> str:
 5. **更新 number.py** ✅
    - 使用 `PetkitNumberEntity` 基类
 
-### 阶段 3：拆分 coordinator（中等风险）⏳ 待执行
+### 阶段 3：拆分 coordinator（中等风险）⏳ 进行中
+
+**实际用时**：1 小时（部分完成）
+
+1. **创建 coordinators/rate_limiter.py** ✅
+   - 提取 API 频率限制逻辑
+   - 移动白名单配置
+   - 实现 RateLimiter 单例类
+
+2. **更新 coordinator.py** ✅
+   - 使用 RateLimiter 替代全局变量
+   - 简化 _wrap_api_with_rate_limiter 方法
+   - 移除重复代码
+
+3. **创建 coordinators/base.py**（待完成）
+   - 提取基础协调器逻辑
+   - 时区初始化
+   - 会话管理
+
+4. **创建 coordinators/feeder.py**（待完成）
+   - 继承 `BaseCoordinator`
+   - 喂食计划相关方法
+   - 数据更新逻辑
+
+**注**：阶段 3 部分完成。RateLimiter 已提取，coordinator 拆分可继续进行。
+
+### 阶段 4：创建设备型号抽象层（中等风险）⏳ 待执行
 
 **预估时间**：3 小时
 

@@ -200,103 +200,102 @@ card/src/
 
 ## 执行步骤
 
-### 阶段 1：准备工作（不改动代码）
+### 阶段 1：准备工作（不改动代码）✅ 已完成
 
 1. 创建目录结构
 2. 创建空模块文件，添加注释说明职责
 3. 验证构建配置支持新目录结构
 
-### 阶段 2：提取工具函数（低风险）
+### 阶段 2：提取工具函数（低风险）✅ 已完成
 
-1. **提取 `utils/constants.ts`**
+1. **提取 `utils/constants.ts`** ✅
    - 移入常量：`TIME_TOLERANCE = 120`, `SAVE_DELAY = 500`, `DEFAULT_FEED_AMOUNT = 10`
    - 在主组件导入并使用
    
-2. **提取 `utils/date.ts`**
+2. **提取 `utils/date.ts`** ✅
    - 移入函数：`_getTodayDate()`, `_getTodayWeekday()`
    - 保持函数签名不变
    - 在主组件导入并使用
    
-3. **提取 `utils/entity.ts`**
+3. **提取 `utils/entity.ts`** ✅
    - 移入函数：`_getEntityId()`
    - 保持函数签名不变
    - 在主组件导入并使用
    
-4. **验证测试**
+4. **验证测试** ✅
    - 运行构建，确认无错误
    - 功能测试，确认行为不变
 
-### 阶段 3：提取数据处理模块（中等风险）
+### 阶段 3：提取数据处理模块（中等风险）✅ 已完成
 
-1. **提取 `data/parser.ts`**
+1. **提取 `data/parser.ts`** ✅
    - 移入：`_parseTodayPlans()`, `_parseTodayRecords()`
    - 调整为纯函数，传入 weekday 参数
    
-2. **提取 `data/merger.ts`**
+2. **提取 `data/merger.ts`** ✅
    - 移入：`_mergeTimeline()`
    - 调整为纯函数，传入 pendingChanges 参数
    
-3. **提取 `data/summary.ts`**
+3. **提取 `data/summary.ts`** ✅
    - 移入：`_getSummaryFromAttrs()`
    - 保持为纯函数
    
-4. **创建 `data/processor.ts`**
+4. **创建 `data/processor.ts`** ✅
    - 整合：`_processTodayData()`
    - 调用上述模块函数
    
-5. **验证测试**
+5. **验证测试** ✅
    - 运行构建，确认无错误
    - 功能测试，确认数据处理正确
 
-### 阶段 4：提取样式模块（低风险）
+### 阶段 4：提取样式模块（低风险）✅ 已完成
 
-1. **提取 `styles/base.ts`**
+1. **提取 `styles/base.ts`** ✅
    - 移入：`:host`, `ha-card` 样式
    
-2. **提取 `styles/header.ts`**
+2. **提取 `styles/header.ts`** ✅
    - 移入：`.header`, `.header-title`, `.header-actions` 样式
    
-3. **提取 `styles/timeline.ts`**
+3. **提取 `styles/timeline.ts`** ✅
    - 移入：`.timeline-item`, `.time`, `.amount`, `.name` 样式
    
-4. **提取 `styles/button.ts`**
+4. **提取 `styles/button.ts`** ✅
    - 移入：`.icon-btn`, `.feed-btn`, `.refresh-btn` 样式
    
-5. **提取 `styles/form.ts`**
+5. **提取 `styles/form.ts`** ✅
    - 移入：`.edit-time`, `.edit-amount`, `.edit-name` 样式
    
-6. **提取 `styles/summary.ts`**
+6. **提取 `styles/summary.ts`** ✅
    - 移入：`.summary-row`, `.summary-item` 样式
    
-7. **创建 `styles/index.ts`**
+7. **创建 `styles/index.ts`** ✅
    - 合并所有样式：`combineStyles()`
    
-8. **验证测试**
+8. **验证测试** ✅
    - 运行构建，确认无错误
    - 视觉测试，确认样式不变
 
-### 阶段 5：提取状态管理模块（中等风险）
+### 阶段 5：提取状态管理模块（中等风险）✅ 已完成
 
-1. **创建 `state/edit-state.ts`**
+1. **创建 `state/edit-state.ts`** ✅
    - 定义：`EditState` 类，管理编辑状态
    - 包含：`editingItem`, `originalItemData`, `saveTimeout`
    
-2. **创建 `state/pending-changes.ts`**
-   - 定义：`PendingChanges` 类，管理待提交变更
+2. **创建 `state/pending-changes.ts`** ✅
+   - 定义：`PendingChangesManager` 类，管理待提交变更
    - 包含：`Map` 存储，增删改查方法
    
-3. **创建 `state/manager.ts`**
+3. **创建 `state/manager.ts`** ✅
    - 定义：`StateManager` 类，统一管理
-   - 组合：`EditState`, `PendingChanges`
+   - 组合：`EditState`, `PendingChangesManager`
    
 4. **在主组件使用状态管理器**
-   - 替换原有私有属性
+   - 待后续集成
    
 5. **验证测试**
-   - 运行构建，确认无错误
-   - 编辑功能测试，确认状态管理正确
+   - 待集成后测试
 
-### 阶段 6：提取服务调用模块（低风险）
+### 阶段 6：提取服务调用模块（低风险）⏳ 待执行
 
 1. **提取 `services/plan.ts`**
    - 移入：`_updatePlan()`, `_saveNewItem()`, `_disablePlan()`, `_deletePlan()`

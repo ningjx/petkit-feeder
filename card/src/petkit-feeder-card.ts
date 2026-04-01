@@ -9,16 +9,6 @@ import { getEntityId, getTodayWeekday } from './utils';
 import { processTodayData, PendingChange } from './data';
 import { combineStyles } from './styles';
 
-// 注册到卡片选择器
-(window as any).customCards = (window as any).customCards || [];
-(window as any).customCards.push({
-  type: 'petkit-feeder-card',
-  name: '小佩喂食器',
-  description: '显示小佩喂食器状态、喂食计划和历史记录',
-  preview: true,
-  documentationURL: 'https://github.com/yourusername/petkit-ha',
-});
-
 @customElement('petkit-feeder-card')
 export class PetkitFeederCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;

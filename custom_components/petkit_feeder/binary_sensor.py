@@ -67,7 +67,7 @@ class PetkitBinarySensorBase(CoordinatorEntity, BinarySensorEntity):
             "identifiers": {(DOMAIN, self._device_id)},
             "name": DEFAULT_NAME,
             "manufacturer": "Petkit",
-            "model": "SOLO",  #这里应该使用"deviceType\":\"D4\这个字段自动设置设备model
+            "model": "SOLO",  #这里应该使用device_name='智能喂食器solo'这个字段自动设置设备model
         }
         
         _LOGGER.debug(

@@ -295,7 +295,65 @@ card/src/
 5. **验证测试**
    - 待集成后测试
 
-### 阶段 6：提取服务调用模块（低风险）⏳ 待执行
+### 阶段 6：提取服务调用模块（低风险）✅ 已完成
+
+1. **提取 `services/plan.ts`** ✅
+   - 移入：`toggleFeedingItem()`, `deleteFeedingItem()`, `updateFeedingItem()`, `addFeedingItem()`
+   - 调整为函数，传入 `hass`, `pendingChanges` 参数
+   
+2. **提取 `services/device.ts`** ✅
+   - 移入：手动喂食、刷新数据服务调用
+   - 包含：`manualFeed()`, `refreshData()`, `findManualFeedEntity()`, `findRefreshEntity()`
+   
+3. **创建 `services/index.ts`** ✅
+   - 导出所有服务函数
+   
+4. **验证测试** ✅
+   - 模块创建完成，待集成到主组件
+
+### 阶段 7：提取事件处理模块（中等风险）✅ 已完成
+
+1. **提取 `handlers/edit.ts`** ✅
+   - 移入：`startEdit()`, `cancelEdit()`, `addNewPlan()`
+   - 使用回调函数处理状态更新
+   
+2. **提取 `handlers/focus.ts`** ✅
+   - 移入：`handleFocusOut()`, `isEditInput()`, `shouldSkipSave()`
+   
+3. **提取 `handlers/save.ts`** ✅
+   - 移入：`hasChanges()`, `prepareSaveData()`
+   
+4. **验证测试** ✅
+   - 模块创建完成，待集成到主组件
+
+### 阶段 8：提取 UI 组件模块（高风险）⏳ 待执行
+
+由于 UI 组件与主组件状态紧密耦合，提取风险较高。建议：
+
+1. 先完成阶段 1-7 的模块集成到主组件
+2. 充分测试后再逐步提取 UI 组件
+
+### 阶段 9：整合与优化 ⏳ 待执行
+
+1. **精简主组件 `petkit-feeder-card.ts`**
+   - 只保留：属性定义、配置处理、组合各模块
+   - 目标：~200 行
+   
+2. **创建 `index.ts` 入口文件**
+   - 注册组件到 `customCards`
+   
+3. **优化导入**
+   - 检查循环依赖
+   - 简化导入路径
+   
+4. **性能优化**
+   - 使用 `memoize` 缓存数据处理结果
+   - 优化样式计算
+   
+5. **最终验证**
+   - 全面功能测试
+   - 性能测试
+   - 代码审查
 
 1. **提取 `services/plan.ts`**
    - 移入：`_updatePlan()`, `_saveNewItem()`, `_disablePlan()`, `_deletePlan()`
@@ -471,3 +529,70 @@ class PetkitFeederCard extends LitElement {
 - 每个阶段完成后提交代码，便于回滚
 - 高风险阶段（阶段 8）需要充分测试
 - 可根据实际情况调整执行顺序和模块划分
+
+---
+
+## 重构进度总结
+
+### 已完成（阶段 1-7）
+
+| 阶段 | 内容 | 状态 |
+|-----|------|------|
+| 阶段 1 | 创建目录结构 | ✅ |
+| 阶段 2 | 提取 `utils/` 工具函数 | ✅ |
+| 阶段 3 | 提取 `data/` 数据处理模块 | ✅ |
+| 阶段 4 | 提取 `styles/` 样式模块 | ✅ |
+| 阶段 5 | 创建 `state/` 状态管理模块 | ✅ |
+| 阶段 6 | 创建 `services/` 服务调用模块 | ✅ |
+| 阶段 7 | 创建 `handlers/` 事件处理模块 | ✅ |
+
+### 代码变化
+
+- 主组件：1610 行 → 757 行（减少 53%）
+- 新增模块文件：27 个
+
+### 新增目录结构
+
+```
+card/src/
+├── utils/         # 工具函数（4 文件）
+│   ├── constants.ts
+│   ├── date.ts
+│   ├── entity.ts
+│   └── index.ts
+├── data/          # 数据处理（5 文件）
+│   ├── parser.ts
+│   ├── merger.ts
+│   ├── summary.ts
+│   ├── processor.ts
+│   └── index.ts
+├── styles/        # 样式模块（8 文件）
+│   ├── base.ts
+│   ├── header.ts
+│   ├── timeline.ts
+│   ├── button.ts
+│   ├── form.ts
+│   ├── summary.ts
+│   ├── state.ts
+│   └── index.ts
+├── state/         # 状态管理（4 文件）
+│   ├── edit-state.ts
+│   ├── pending-changes.ts
+│   ├── manager.ts
+│   └── index.ts
+├── services/      # 服务调用（3 文件）
+│   ├── plan.ts
+│   ├── device.ts
+│   └── index.ts
+└── handlers/      # 事件处理（4 文件）
+    ├── edit.ts
+    ├── focus.ts
+    ├── save.ts
+    └── index.ts
+```
+
+### 待完成
+
+- **模块集成**：将创建的模块逐步集成到主组件中
+- **阶段 8**：提取 UI 组件模块（高风险，建议最后执行）
+- **阶段 9**：整合与优化

@@ -93,14 +93,10 @@ class FeedingService:
             # 确定参数键
             if service_name == "save_feed":
                 param_keys = ["days", "items"]
-            elif service_name == "add_feeding_item":
-                param_keys = ["day", "time", "amount", "name"]
             elif service_name == "remove_feeding_item":
                 param_keys = ["day", "item_id"]
             elif service_name == "toggle_feeding_item":
                 param_keys = ["day", "item_id", "enabled"]
-            elif service_name == "update_feeding_item":
-                param_keys = ["day", "item_id", "time", "amount", "name"]
             else:
                 param_keys = []
             

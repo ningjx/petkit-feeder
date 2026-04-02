@@ -197,60 +197,6 @@ class PetkitDevice(ABC):
         """
         raise NotImplementedError(f"{self.model_name} 不支持保存喂食计划")
     
-    async def add_feeding_item(
-        self,
-        day: int,
-        time: str,
-        amount: int,
-        name: str,
-        api_client: Any,
-        sync_all_days: bool = True,
-        existing_feed_daily_list: list | None = None,
-    ) -> bool:
-        """添加喂食计划项.
-        
-        Args:
-            day: 星期几（1-7）
-            time: 时间（HH:MM）
-            amount: 出粮量
-            name: 计划名称
-            api_client: API 客户端
-            sync_all_days: 是否同步到一周所有天
-            existing_feed_daily_list: 已有的喂食计划列表
-            
-        Returns:
-            是否成功
-        """
-        raise NotImplementedError(f"{self.model_name} 不支持添加喂食计划")
-    
-    async def update_feeding_item(
-        self,
-        day: int,
-        item_id: str,
-        time: str | None,
-        amount: int | None,
-        name: str | None,
-        api_client: Any,
-        sync_all_days: bool = True,
-        existing_feed_daily_list: list | None = None,
-    ) -> bool:
-        """更新喂食计划项.
-        
-        Args:
-            day: 星期几（1-7）
-            item_id: 计划项 ID
-            time: 时间（HH:MM）
-            amount: 出粮量
-            name: 计划名称
-            api_client: API 客户端
-            sync_all_days: 是否同步到一周所有天
-            existing_feed_daily_list: 已有的喂食计划列表
-            
-        Returns:
-            是否成功
-        """
-        raise NotImplementedError(f"{self.model_name} 不支持更新喂食计划")
-    
     async def remove_feeding_item(
         self,
         day: int,

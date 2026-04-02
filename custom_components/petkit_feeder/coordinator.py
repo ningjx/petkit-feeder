@@ -694,40 +694,6 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         
         return result
 
-    async def add_feeding_item(
-        self,
-        day: int,
-        time_str: str,
-        amount: int,
-        name: str = "",
-        sync_all_days: bool = True,
-    ) -> bool:
-        """新增喂食计划项（同步一周）."""
-        if not self._api or not self._device:
-            _LOGGER.error("API 或设备实例未初始化")
-            return False
-        
-        try:
-            existing_feed_daily_list = self._get_feed_daily_list_data()
-            
-            result = await self._device.add_feeding_item(
-                day=day,
-                time=time_str,
-                amount=amount,
-                name=name,
-                api_client=self._api,
-                sync_all_days=sync_all_days,
-                existing_feed_daily_list=existing_feed_daily_list,
-            )
-            
-            if result:
-                await self.async_request_refresh()
-            
-            return result
-        except Exception as err:
-            _LOGGER.error("新增喂食计划失败: %s", err, exc_info=True)
-            return False
-
     async def remove_feeding_item(
         self,
         day: int,
@@ -783,42 +749,6 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             return result
         except Exception as err:
             _LOGGER.error("切换喂食计划状态失败: %s", err, exc_info=True)
-            return False
-
-    async def update_feeding_item(
-        self,
-        day: int,
-        item_id: str,
-        time_str: str | None = None,
-        amount: int | None = None,
-        name: str | None = None,
-        sync_all_days: bool = True,
-    ) -> bool:
-        """更新喂食计划项（同步一周）."""
-        if not self._api or not self._device:
-            _LOGGER.error("API 或设备实例未初始化")
-            return False
-        
-        try:
-            existing_feed_daily_list = self._get_feed_daily_list_data()
-            
-            result = await self._device.update_feeding_item(
-                day=day,
-                item_id=item_id,
-                time=time_str,
-                amount=amount,
-                name=name,
-                api_client=self._api,
-                sync_all_days=sync_all_days,
-                existing_feed_daily_list=existing_feed_daily_list,
-            )
-            
-            if result:
-                await self.async_request_refresh()
-            
-            return result
-        except Exception as err:
-            _LOGGER.error("更新喂食计划失败: %s", err, exc_info=True)
             return False
 
     async def save_feed(

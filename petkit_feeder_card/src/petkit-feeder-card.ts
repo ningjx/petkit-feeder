@@ -24,6 +24,7 @@ export class PetkitFeederCard extends LitElement {
   private _isSaving: boolean = false;
   private _pendingFocus: { itemId: string; field: 'time' | 'name' | 'amount' } | null = null;
   private _isAddingNewPlan: boolean = false;  // 标记正在添加新计划
+  private _isTogglingItem: boolean = false;  // 标记正在切换计划状态
 
   private _getEntityId(entityType: string): string {
     if (!this._config) return '';
@@ -457,13 +458,20 @@ export class PetkitFeederCard extends LitElement {
     if (!this.hass || !this._config) return;
     if (item.isExecuted) return;
 
+    // 标记正在切换，防止 focusout 触发保存
+    this._isTogglingItem = true;
+
     await toggleFeedingItem(
       this.hass,
       this._selectedDay,
       item,
       this._weeklyCache,
-      () => this.requestUpdate(),
+      () => {
+        this._isTogglingItem = false;
+        this.requestUpdate();
+      },
       (error) => {
+        this._isTogglingItem = false;
         console.error('[PetkitFeeder] 切换失败:', error);
         this.requestUpdate();
       }
@@ -625,8 +633,8 @@ export class PetkitFeederCard extends LitElement {
   }
 
   private _handleCardFocusOut(e: FocusEvent): void {
-    // 如果正在添加新计划，忽略 focusout 事件
-    if (this._isAddingNewPlan) {
+    // 如果正在添加新计划或切换状态，忽略 focusout 事件
+    if (this._isAddingNewPlan || this._isTogglingItem) {
       return;
     }
     

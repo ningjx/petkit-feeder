@@ -200,9 +200,17 @@ export class PetkitFeederCard extends LitElement {
   }
 
   private _getDateDisplay(): string {
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const day = now.getDate();
+    const today = new Date();
+    const currentWeekday = today.getDay(); // 0=周日, 1=周一...
+    const currentWeekdayNum = currentWeekday === 0 ? 7 : currentWeekday; // 转为 1=周一...7=周日
+    
+    // 计算选中周天对应的日期
+    const daysDiff = this._selectedDay - currentWeekdayNum;
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + daysDiff);
+    
+    const month = targetDate.getMonth() + 1;
+    const day = targetDate.getDate();
     const weekday = WEEKDAY_NAMES[this._selectedDay];
     return `${month}月${day}日 ${weekday}`;
   }

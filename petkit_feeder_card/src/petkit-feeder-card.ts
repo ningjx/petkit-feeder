@@ -2,7 +2,6 @@
 
 import { LitElement, html, svg } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PetkitSoloCardConfig, TimelineItem, TodaySummary } from './types';
 import { getEntityId, getTodayWeekdayNumber } from './utils';
@@ -23,6 +22,8 @@ export class PetkitFeederCard extends LitElement {
   private _originalItemData: { time: string; name: string; amount: number } | null = null;
   private _saveDebounceTimer: number | null = null;
   private _isSaving: boolean = false;
+  private _pendingFocus: { itemId: string; field: 'time' | 'name' | 'amount' } | null = null;
+  private _isAddingNewPlan: boolean = false;  // 标记正在添加新计划
 
   private _getEntityId(entityType: string): string {
     if (!this._config) return '';
@@ -56,6 +57,25 @@ export class PetkitFeederCard extends LitElement {
 
   protected shouldUpdate(): boolean {
     return true;
+  }
+
+  protected updated() {
+    if (this._pendingFocus) {
+      const { itemId, field } = this._pendingFocus;
+      const inputId = `edit-${field}-${itemId}`;
+      const input = this.shadowRoot?.getElementById(inputId) as HTMLInputElement;
+      
+      if (input) {
+        input.focus();
+        if (field === 'name') {
+          input.select();
+        } else if (field === 'time') {
+          input.showPicker?.();
+        }
+      }
+      this._isAddingNewPlan = false;
+      this._pendingFocus = null;
+    }
   }
 
   protected render() {
@@ -240,22 +260,10 @@ export class PetkitFeederCard extends LitElement {
     const canDeleteBtn = item.itemType === 'plan' && item.canDelete && !item.isExecuted;
     const canEdit = item.itemType === 'plan';
 
-    const focusInput = (el: Element | undefined) => {
-      if (el && (el instanceof HTMLInputElement)) {
-        requestAnimationFrame(() => {
-          el.focus();
-          el.select?.();
-          if (el.type === 'time') {
-            el.showPicker?.();
-          }
-        });
-      }
-    };
-
     const timeEl = editField === 'time' && this._editingItem
       ? html`
           <input 
-            ${ref(focusInput)}
+            id="edit-time-${item.itemId}"
             type="time" 
             class="edit-time" 
             .value=${this._editingItem.time}
@@ -268,7 +276,7 @@ export class PetkitFeederCard extends LitElement {
     const nameEl = editField === 'name' && this._editingItem
       ? html`
           <input 
-            ${ref(focusInput)}
+            id="edit-name-${item.itemId}"
             type="text" 
             class="edit-name" 
             .value=${this._editingItem.name}
@@ -283,7 +291,7 @@ export class PetkitFeederCard extends LitElement {
     const amountEl = editField === 'amount' && this._editingItem
       ? html`
           <input 
-            ${ref(focusInput)}
+            id="edit-amount-${item.itemId}"
             type="number" 
             class="edit-amount" 
             .value=${String(this._editingItem.amount)}
@@ -474,6 +482,9 @@ export class PetkitFeederCard extends LitElement {
       this._saveDebounceTimer = null;
     }
 
+    // 标记正在添加新计划，防止 focusout 触发保存
+    this._isAddingNewPlan = true;
+
     const newItemId = `new_${Date.now()}`;
     const newItem: TimelineItem = {
       id: newItemId,
@@ -510,6 +521,8 @@ export class PetkitFeederCard extends LitElement {
       amount: 10,
     };
 
+    // 标记需要聚焦的输入框，updated 生命周期会处理
+    this._pendingFocus = { itemId: newItemId, field: 'name' };
     this.requestUpdate();
   }
 
@@ -539,6 +552,11 @@ export class PetkitFeederCard extends LitElement {
       amount: item.plannedAmount,
     };
 
+    // 标记正在进入编辑状态，防止 focusout 触发保存
+    this._isAddingNewPlan = true;
+    
+    // 标记需要聚焦的输入框，updated 生命周期会处理
+    this._pendingFocus = { itemId: item.itemId, field: field };
     this.requestUpdate();
   }
 
@@ -582,6 +600,11 @@ export class PetkitFeederCard extends LitElement {
   }
 
   private _handleCardFocusOut(e: FocusEvent): void {
+    // 如果正在添加新计划，忽略 focusout 事件
+    if (this._isAddingNewPlan) {
+      return;
+    }
+    
     // 检查是否有编辑输入框获得焦点
     const activeEl = document.activeElement;
     const isEditingInput = activeEl && (

@@ -20,8 +20,8 @@ export const baseStyles = css`
   .weekday-tabs {
     display: flex;
     gap: 4px;
-    padding: 4px 0 0 0;
-    margin-bottom: 6px;
+    padding: 3px 0;
+    margin-bottom: 3px;
     border-bottom: 1px solid var(--divider-color, #e0e0e0);
   }
 

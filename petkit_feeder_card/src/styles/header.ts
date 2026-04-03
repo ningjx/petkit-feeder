@@ -8,7 +8,7 @@ export const headerStyles = css`
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 3px;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--divider-color);
     position: relative;

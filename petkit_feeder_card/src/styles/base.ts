@@ -27,7 +27,8 @@ export const baseStyles = css`
 
   .weekday-tab {
     flex: 1;
-    padding: 8px 4px;
+    height: 30px;
+    padding: 0 4px;
     border: 2px solid transparent;
     border-radius: 4px;
     background: transparent;
@@ -36,6 +37,9 @@ export const baseStyles = css`
     cursor: pointer;
     transition: all 0.2s ease;
     box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .weekday-tab:hover {

@@ -99,6 +99,7 @@ class PetKitClient:
         password: str,
         region: str,
         timezone: str,
+        locale: str = "zh_CN",
         session: aiohttp.ClientSession | None = None,
         **kwargs,
     ) -> None:
@@ -113,6 +114,7 @@ class PetKitClient:
         self.password = password
         self.region = region.lower()
         self.timezone = timezone
+        self.locale = locale
         self._session: SessionInfo | None = None
         self.account_data: list[AccountData] = []
         self.petkit_entities: dict[
@@ -123,6 +125,7 @@ class PetKitClient:
             base_url=PetkitDomain.PASSPORT_PETKIT,
             session=session,
             timezone=self.timezone,
+            locale=self.locale,
             **kwargs,
         )
         self.bluetooth_manager = BluetoothManager(self, **kwargs)
@@ -1192,12 +1195,13 @@ class PrepReq:
     """Prepare the request to the PetKit API."""
 
     def __init__(
-        self, base_url: str, session: aiohttp.ClientSession, timezone: str, **kwargs
+        self, base_url: str, session: aiohttp.ClientSession, timezone: str, locale: str = "zh_CN", **kwargs
     ) -> None:
         """Initialize the request."""
         self.base_url = base_url
         self.session = session
         self.timezone = timezone
+        self.locale = locale
         self.base_headers: dict[str, str] = {}
         self._debug_test = kwargs.pop(PTK_DBG, False)
 
@@ -1210,7 +1214,7 @@ class PrepReq:
             "Content-Type": Header.CONTENT_TYPE.value,
             "User-Agent": Header.AGENT.value,
             "X-Img-Version": Header.IMG_VERSION.value,
-            "X-Locale": Header.LOCALE.value,
+            "X-Locale": self.locale,
             "X-Client": Header.CLIENT.value,
             "X-Hour": Header.HOUR.value,
             "X-TimezoneId": self.timezone,

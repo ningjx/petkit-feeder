@@ -30,8 +30,8 @@ export function mergeTimeline(
     const timeSeconds = parseInt(timeParts[0]) * 3600 + parseInt(timeParts[1]) * 60;
 
     return {
-      id: `plan_${plan.time}_${index}`,
-      itemId: `s${timeSeconds}`,
+      id: `plan_${plan.itemId || plan.time}_${index}`,
+      itemId: plan.itemId || `s${timeSeconds}`,
       time: plan.time,
       timeSeconds: timeSeconds,
       name: plan.name,
@@ -81,8 +81,8 @@ export function mergeTimeline(
 
     if (record.src === 1) {
       return {
-        id: `deleted_plan_${record.time}_${index}`,
-        itemId: `s${timeSeconds}`,
+        id: `deleted_plan_${record.id || record.time}_${index}`,
+        itemId: record.id || `s${timeSeconds}`,
         time: record.time,
         timeSeconds: timeSeconds,
         name: record.name || '已删除计划',
@@ -98,8 +98,8 @@ export function mergeTimeline(
     }
 
     return {
-      id: `manual_${record.time}_${index}`,
-      itemId: `s${timeSeconds}`,
+      id: `manual_${record.id || record.time}_${index}`,
+      itemId: record.id || `s${timeSeconds}`,
       time: record.time,
       timeSeconds: timeSeconds,
       name: record.name || '手动喂食',

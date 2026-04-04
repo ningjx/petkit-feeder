@@ -91,7 +91,7 @@ class Header(StrEnum):
     CONTENT_TYPE = "application/x-www-form-urlencoded"
     AGENT = "okhttp/3.14.9"
     CLIENT = f"{Client.PLATFORM_TYPE}({Client.OS_VERSION};{Client.MODEL_NAME})"
-    LOCALE = "en-US"
+    LOCALE = "zh_CN"
     IMG_VERSION = "1"
     HOUR = "24"
 

@@ -22,6 +22,8 @@ from .const import (
     DEFAULT_REFRESH_INTERVAL,
     MIN_UPDATE_INTERVAL,
     MAX_UPDATE_INTERVAL,
+    REGION_LOCALE_MAP,
+    DEFAULT_LOCALE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,12 +51,15 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # 验证账号密码
             try:
                 # 创建临时 session 用于登录
+                region = user_input.get("region", "CN")
+                locale = REGION_LOCALE_MAP.get(region, DEFAULT_LOCALE)
                 async with aiohttp.ClientSession() as session:
                     client = PetKitClient(
                         username=user_input["username"],
                         password=user_input["password"],
-                        region=user_input.get("region", "CN"),
+                        region=region,
                         timezone="Asia/Shanghai",
+                        locale=locale,
                         session=session,
                     )
                     

@@ -725,74 +725,72 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         self,
         weekly_plan: list[dict],
     ) -> bool:
-        """保存喂食计划（批量，支持7天独立配置）.
+        """保存喂食计划（提交完整7天数据）.
         
         Args:
             weekly_plan: 周计划列表，每个元素包含 day, suspended, items
+                         可以只传入有变更的天，会自动补充其他天
             
         Returns:
             是否成功
-            
-        注意：
-            虽然 API 接口接受列表格式，但服务器实际只支持处理单天的计划数据。
-            因此这里只处理传入列表的第一项，其他项暂不处理。
-            保留多天处理逻辑，未来可能需要支持多天批量提交。
         """
         if not self._api or not self._device:
             _LOGGER.error("API 或设备实例未初始化")
             return False
         
         try:
-            # # 补充缺失周天逻辑（暂注释，服务器可能已支持）
-            # existing_plan = self._get_feed_daily_list_data()
-            # input_days = set(p["day"] for p in weekly_plan)
-            # all_days = set(range(1, 8))
-            # missing_days = all_days - input_days
-            # 
-            # complete_plan = list(weekly_plan)
-            # for day in sorted(missing_days):
-            #     existing_day_plan = next(
-            #         (p for p in existing_plan if p["repeats"] == day),
-            #         None
-            #     )
-            #     if existing_day_plan:
-            #         complete_plan.append({
-            #             "day": day,
-            #             "suspended": existing_day_plan.get("suspended", 0),
-            #             "items": [
-            #                 {
-            #                     "time": self._seconds_to_time(item.get("time", 0)),
-            #                     "amount": item.get("amount", 0),
-            #                     "name": item.get("name", ""),
-            #                     "enabled": True,
-            #                 }
-            #                 for item in existing_day_plan.get("items", [])
-            #             ],
-            #         })
-            #     else:
-            #         complete_plan.append({
-            #             "day": day,
-            #             "suspended": 0,
-            #             "items": [],
-            #         })
-            # 
-            # complete_plan.sort(key=lambda x: x["day"])
+            # 获取已有的 7 天计划数据
+            existing_plan = self._get_feed_daily_list_data()
             
-            # 只处理传入列表的第一项（服务器只支持单天提交）
-            if len(weekly_plan) > 0:
-                single_day_plan = weekly_plan[:1]
-                
-                _LOGGER.debug(
-                    "save_feed: 收到 %d 天，只处理第 1 天（day=%d）",
-                    len(weekly_plan),
-                    single_day_plan[0]["day"]
-                )
-            else:
-                _LOGGER.warning("save_feed: 传入的计划列表为空")
-                return False
+            # 构建传入的天数集合
+            input_days = {p["day"] for p in weekly_plan}
+            
+            # 构建完整 7 天计划
+            complete_plan = {}
+            
+            # 先填充已有数据
+            for existing_day in existing_plan:
+                day_num = existing_day["repeats"]
+                if day_num not in input_days:
+                    # 使用已有数据，转换格式
+                    complete_plan[day_num] = {
+                        "day": day_num,
+                        "suspended": existing_day.get("suspended", 0),
+                        "items": [
+                            {
+                                "time": self._seconds_to_time(item.get("time", 0)),
+                                "amount": item.get("amount", 0),
+                                "name": item.get("name", ""),
+                                "enabled": True,
+                            }
+                            for item in existing_day.get("items", [])
+                        ],
+                    }
+            
+            # 再用传入的数据覆盖
+            for plan in weekly_plan:
+                complete_plan[plan["day"]] = plan
+            
+            # 补充缺失的天（空计划）
+            for day in range(1, 8):
+                if day not in complete_plan:
+                    complete_plan[day] = {
+                        "day": day,
+                        "suspended": 0,
+                        "items": [],
+                    }
+            
+            # 按天排序生成最终列表
+            final_plan = [complete_plan[day] for day in sorted(complete_plan.keys())]
+            
+            _LOGGER.debug(
+                "save_feed: 收到 %d 天变更，提交完整 %d 天数据",
+                len(weekly_plan),
+                len(final_plan)
+            )
             
             result = await self._device.save_feed_weekly(
-                weekly_plan=single_day_plan,
+                weekly_plan=final_plan,
                 api_client=self._api,
             )
             
@@ -800,9 +798,8 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
                 await self.async_request_refresh()
             
             _LOGGER.info(
-                "保存喂食计划成功: 周%d，共%d项",
-                single_day_plan[0]["day"],
-                len(single_day_plan[0].get("items", []))
+                "保存喂食计划成功: 变更 %d 天，共提交 7 天",
+                len(weekly_plan)
             )
             return result
         except Exception as err:

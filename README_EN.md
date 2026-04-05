@@ -12,12 +12,12 @@ Native Home Assistant integration for PetKit smart feeders.
 
 ## Supported Devices
 
-| Device | Model | Status |
-|--------|-------|--------|
-| Fresh Element Solo | D4 | ✅ Supported |
-| Fresh Element | D3 | 🚧 In Development |
-| Fresh Element Duo | D4s | 🚧 In Development |
-| Feeder Mini | Mini | 🚧 In Development |
+| Device             | Model | Status           |
+|--------------------|-------|------------------|
+| Fresh Element Solo | D4    | ✅ Supported     |
+| Fresh Element      | D3    | 🚧 In Development|
+| Fresh Element Duo  | D4s   | 🚧 In Development|
+| Feeder Mini        | Mini  | 🚧 In Development|
 
 ## Features
 
@@ -32,23 +32,31 @@ Native Home Assistant integration for PetKit smart feeders.
 ### HACS Installation (Recommended)
 
 1. HACS → Integrations → Explore and download repositories
-2. Search for "Petkit Feeder"
-3. Click download and restart Home Assistant
-4. Settings → Devices & Services → Add Integration → Search for "Petkit"
+2. Add custom repository: `https://github.com/ningjx/Home-Petkit.git`
+3. Search for "Petkit Feeder"
+4. Click download and restart Home Assistant
+5. Settings → Devices & Services → Add Integration → Search for "Petkit"
 
 ### Manual Installation
 
 1. Copy `custom_components/petkit_feeder` to your Home Assistant `custom_components` directory
-2. Copy `petkit_feeder_card/dist/petkit-feeder-card.js` to your `www` directory
-3. Restart Home Assistant
-4. Settings → Devices & Services → Add Integration → Search for "Petkit"
+2. Restart Home Assistant
+3. Settings → Devices & Services → Add Integration → Search for "Petkit"
 
 ## Lovelace Card
 
+This integration comes with a dedicated card for visual operation.
+
+**Card Repository**: https://github.com/ningjx/petkit-feeder-card
+
+**Configuration example after installing the card**:
+
 ```yaml
 type: custom:petkit-feeder-card
-device_id: "276669"
+device_id: "YOUR_DEVICE_ID"
 ```
+
+> 💡 **Tip**: The `device_id` can be found in the "Device ID" sensor on the integration device page.
 
 ## Credits
 
@@ -58,3 +66,7 @@ This project is based on [py-petkit-api](https://github.com/Jezza34000/py-petkit
 
 - This is not an official PetKit product
 - API may change at any time
+
+## License
+
+MIT

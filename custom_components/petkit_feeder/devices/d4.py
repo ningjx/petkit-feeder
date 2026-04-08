@@ -281,14 +281,14 @@ class D4Device(PetkitDevice):
         if enabled:
             await api_client.req.request(
                 method="POST",
-                url=f"d4/restoreDailyFeed?id={item_id}&deviceId={self._get_device_id()}&day={date_int}",
+                url=f"d4/restoreDailyFeed?id=s{item_id}&deviceId={self._get_device_id()}&day={date_int}",
                 headers=headers,
             )
             _LOGGER.info("恢复喂食计划: 周%d %s (日期: %d)", day, item_id, date_int)
         else:
             await api_client.req.request(
                 method="POST",
-                url=f"d4/removeDailyFeed?id={item_id}&deviceId={self._get_device_id()}&day={date_int}",
+                url=f"d4/removeDailyFeed?id=s{item_id}&deviceId={self._get_device_id()}&day={date_int}",
                 headers=headers,
             )
             _LOGGER.info("禁用喂食计划: 周%d %s (日期: %d)", day, item_id, date_int)

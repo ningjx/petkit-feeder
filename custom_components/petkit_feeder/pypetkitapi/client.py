@@ -1244,8 +1244,16 @@ class PrepReq:
             self.base_headers = await self._generate_header()
 
         _url = url if full_url else "/".join(s.strip("/") for s in [self.base_url, url])
-        _headers = {**self.base_headers, **(headers or {})}
-        _LOGGER.debug("Request: %s %s", method, _url)
+        
+        # 合并 headers，优先保留传入的 headers（忽略大小写比较）
+        _headers = dict(headers) if headers else {}
+        headers_lower_keys = {k.lower() for k in _headers.keys()}
+        
+        for key, value in self.base_headers.items():
+            if key.lower() not in headers_lower_keys:
+                _headers[key] = value
+        
+        _LOGGER.debug("Request: %s %s , Header: %s", method, _url, _headers)
         try:
             async with self.session.request(
                 method,

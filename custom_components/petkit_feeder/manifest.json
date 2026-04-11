@@ -1,6 +1,6 @@
 {
   "domain": "petkit_feeder",
-  "name": "小佩喂食器",
+  "name": "Petkit Feeder",
   "codeowners": ["@ningjx"],
   "config_flow": true,
   "documentation": "https://github.com/ningjx/petkit-feeder",

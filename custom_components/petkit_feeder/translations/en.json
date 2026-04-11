@@ -101,14 +101,36 @@
     "button": {
       "refresh": {
         "name": "Refresh Data"
+      },
+      "manual_feed": {
+        "name": "Manual Feed"
       }
     },
-"select": {
-       "feeding_plan": {
-         "name": "Feeding Plan"
-       }
-     }
-   },
+    "switch": {
+      "light_mode": {
+        "name": "Light Mode"
+      },
+      "food_warn": {
+        "name": "Food Warning"
+      },
+      "feed_notify": {
+        "name": "Feed Notification"
+      },
+      "manual_lock": {
+        "name": "Manual Lock"
+      }
+    },
+    "number": {
+      "feed_amount": {
+        "name": "Feed Amount"
+      }
+    },
+    "select": {
+      "feeding_plan": {
+        "name": "Feeding Plan"
+      }
+    }
+  },
   "services": {
     "add_feeding_item": {
       "name": "Add Feeding Item",

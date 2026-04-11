@@ -53,8 +53,6 @@ class PetkitFeedAmountNumber(PetkitNumberEntity):
         """初始化数字输入."""
         super().__init__(coordinator, config_entry)
         
-        self._attr_name = "出粮克数"
-        
         _LOGGER.debug(
             "[PetkitFeeder] Number initialized: entity_id=%s, unique_id=%s, device_id=%s",
             self.entity_id,

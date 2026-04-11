@@ -41,8 +41,6 @@ class PetkitRefreshButton(PetkitButtonEntity):
     ) -> None:
         """初始化刷新按钮."""
         super().__init__(coordinator, config_entry, BUTTON_REFRESH)
-        
-        self._attr_name = "刷新数据"
         self._attr_icon = "mdi:refresh"
         
         _LOGGER.debug(
@@ -69,8 +67,6 @@ class PetkitManualFeedButton(PetkitButtonEntity):
     ) -> None:
         """初始化手动出粮按钮."""
         super().__init__(coordinator, config_entry)
-        
-        self._attr_name = "手动出粮"
         self._attr_icon = "mdi:food-drumstick"
         
         _LOGGER.debug(

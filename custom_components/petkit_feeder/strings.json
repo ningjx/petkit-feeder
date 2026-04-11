@@ -54,6 +54,30 @@
       },
       "today_count": {
         "name": "今日喂食次数"
+      },
+      "feeding_schedule": {
+        "name": "喂食计划"
+      },
+      "feeding_records": {
+        "name": "喂食记录"
+      },
+      "real_amount_total": {
+        "name": "实际喂食总量"
+      },
+      "plan_amount_total": {
+        "name": "计划喂食总量"
+      },
+      "add_amount_total": {
+        "name": "手动喂食总量"
+      },
+      "plan_real_amount_total": {
+        "name": "计划实际喂食总量"
+      },
+      "wifi_ssid": {
+        "name": "WIFI 名称"
+      },
+      "wifi_rsq": {
+        "name": "WIFI 强度"
       }
     },
     "binary_sensor": {
@@ -62,11 +86,39 @@
       },
       "low_food": {
         "name": "缺粮警告"
+      },
+      "battery_status": {
+        "name": "电池状态"
+      },
+      "battery_power": {
+        "name": "电池供电"
       }
     },
     "button": {
       "refresh": {
         "name": "刷新数据"
+      },
+      "manual_feed": {
+        "name": "手动出粮"
+      }
+    },
+    "switch": {
+      "light_mode": {
+        "name": "指示灯模式"
+      },
+      "food_warn": {
+        "name": "缺粮提醒"
+      },
+      "feed_notify": {
+        "name": "喂食通知"
+      },
+      "manual_lock": {
+        "name": "手动锁定"
+      }
+    },
+    "number": {
+      "feed_amount": {
+        "name": "出粮克数"
       }
     },
     "select": {

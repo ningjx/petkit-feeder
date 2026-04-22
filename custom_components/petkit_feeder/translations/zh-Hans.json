@@ -40,7 +40,7 @@
       }
     }
   },
-    "entity": {
+  "entity": {
     "sensor": {
       "device_name": {
         "name": "设备名称"

@@ -26,6 +26,19 @@ async def async_setup_entry(
         PetkitOnlineSensor(coordinator, config_entry),
     ]
     
+    # 添加缺粮警告传感器（如果设备支持）
+    device = coordinator.data.get("device_info") if coordinator.data else None
+    if device:
+        # 检查是否有粮量信息
+        if hasattr(device, "food_level") or hasattr(device, "desiccant_left_percent"):
+            entities.append(PetkitLowFoodSensor(coordinator, config_entry))
+        # 检查是否有电池状态信息
+        state = getattr(device, "state", None)
+        if state and hasattr(state, "battery_status"):
+            entities.append(PetkitBatteryStatusSensor(coordinator, config_entry))
+        if state and hasattr(state, "battery_power"):
+            entities.append(PetkitBatteryPowerSensor(coordinator, config_entry))
+    
     async_add_entities(entities)
 
 

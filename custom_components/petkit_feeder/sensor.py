@@ -26,6 +26,7 @@ async def async_setup_entry(
     entities = [
         PetkitDeviceNameSensor(coordinator, config_entry),
         PetkitDeviceIdSensor(coordinator, config_entry),
+        # PetkitFoodLevelSensor(coordinator, config_entry),  # 暂不启用
         PetkitLastFeedingSensor(coordinator, config_entry),
         PetkitLastAmountSensor(coordinator, config_entry),
         PetkitTodayCountSensor(coordinator, config_entry),

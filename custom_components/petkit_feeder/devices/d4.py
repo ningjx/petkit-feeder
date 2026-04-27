@@ -179,11 +179,11 @@ class D4Device(PetkitDevice):
                 "amount": amount,
                 "amount1": 0,
                 "amount2": 0,
-                "deviceId": self._get_device_id() if is_first else 0,
-                "deviceType": self._get_device_type_id() if is_first else 0,
+                "deviceId": 0,#self._get_device_id() if is_first else 0,
+                "deviceType": 0,#self._get_device_type_id() if is_first else 0,
                 "id": time_seconds,
                 "name": item.get("name", ""),
-                "petAmount": [],
+                #"petAmount": [],
                 "time": time_seconds,
             })
         
@@ -235,11 +235,11 @@ class D4Device(PetkitDevice):
                     "amount": amount,
                     "amount1": 0,
                     "amount2": 0,
-                    "deviceId": self._get_device_id() if is_first else 0,
-                    "deviceType": self._get_device_type_id() if is_first else 0,
+                    "deviceId": 0,#self._get_device_id() if is_first else 0,
+                    "deviceType": 0,#self._get_device_type_id() if is_first else 0,
                     "id": time_seconds,
                     "name": item.get("name", ""),
-                    "petAmount": [],
+                    #"petAmount": [],
                     "time": time_seconds,
                 })
             

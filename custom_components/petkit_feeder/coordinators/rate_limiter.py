@@ -6,7 +6,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 # API 频率限制配置
-DEFAULT_REQUEST_INTERVAL = 6  # 默认请求间隔（秒）
+DEFAULT_REQUEST_INTERVAL = 10  # 默认请求间隔（秒）
 WHITELIST_REQUEST_INTERVAL = 0  # 白名单请求间隔（秒）
 
 # 白名单 API 端点（查询类 API，不做限制）

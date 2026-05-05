@@ -2,10 +2,16 @@ name: CI
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      force_release:
+        description: '强制发布（即使版本未更新）'
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
 
@@ -24,6 +30,59 @@ jobs:
       - name: Hassfest validation
         uses: "home-assistant/actions/hassfest@master"
 
+  check-version:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      new_tag: ${{ steps.check.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version
+        id: check
+        run: |
+          MANIFEST_VERSION=$(jq -r '.version' custom_components/petkit_feeder/manifest.json)
+          LATEST_TAG=$(git tag --sort=-v:refname | grep "^v" | head -1 || echo "v0.0.0")
+          TAG_VERSION=${LATEST_TAG#v}
+
+          SHOULD_RELEASE="false"
+          NEW_TAG=""
+
+          if [[ "$MANIFEST_VERSION" > "$TAG_VERSION" ]]; then
+            SHOULD_RELEASE="true"
+            NEW_TAG="v${MANIFEST_VERSION}"
+            echo "版本更新: $TAG_VERSION → $MANIFEST_VERSION"
+          elif [[ "${{ inputs.force_release }}" == "true" ]]; then
+            SHOULD_RELEASE="true"
+            NEW_TAG="v${MANIFEST_VERSION}"
+            echo "强制发布: $NEW_TAG"
+          else
+            echo "版本未更新 ($MANIFEST_VERSION ≤ $TAG_VERSION)"
+          fi
+
+          echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+  create-tag:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ needs.check-version.outputs.new_tag }}"
+          git push origin "${{ needs.check-version.outputs.new_tag }}"
+
   release:
     runs-on: "ubuntu-latest"
     needs: validate
@@ -32,7 +91,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: "actions/checkout@v4"
 
       - name: Create zip
         run: |
@@ -44,5 +103,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: petkit_feeder.zip
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

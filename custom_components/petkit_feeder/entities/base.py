@@ -27,6 +27,7 @@ class PetkitEntity(CoordinatorEntity):
         device = self._get_device()
         model = "Unknown"
         device_name = DEFAULT_NAME
+        firmware_version = None
 
         if device:
             # 获取设备型号
@@ -35,12 +36,16 @@ class PetkitEntity(CoordinatorEntity):
             # 获取设备名称
             if hasattr(device, "name") and device.name:
                 device_name = device.name
+            # 获取固件版本
+            if hasattr(device, "firmware"):
+                firmware_version = str(device.firmware)
 
         return {
             "identifiers": {(DOMAIN, self._device_id)},
             "name": device_name,
             "manufacturer": "Petkit",
             "model": model,
+            "sw_version": firmware_version
         }
 
     def _get_device(self):

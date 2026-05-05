@@ -3,7 +3,7 @@
 import logging
 from typing import Callable, Awaitable
 
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse
 
 from ..const import DOMAIN
 from ..coordinator import PetkitDataUpdateCoordinator
@@ -49,33 +49,36 @@ class FeedingService:
         self,
         service_name: str,
         param_keys: list[str]
-    ) -> Callable[[ServiceCall], Awaitable[None]]:
+    ) -> Callable[[ServiceCall], Awaitable[ServiceResponse]]:
         """创建服务处理器.
-        
+
         Args:
             service_name: 服务名称
             param_keys: 参数键列表
-            
+
         Returns:
             异步服务处理函数
         """
-        async def handler(call: ServiceCall) -> None:
+        async def handler(call: ServiceCall) -> ServiceResponse:
             """服务处理函数."""
             coordinator = self._get_coordinator(call.data.get("entry_id"))
-            
+
             # 提取参数
             params = {key: call.data[key] for key in param_keys if key in call.data}
-            
+
             # 调用协调器方法
             method = getattr(coordinator, service_name)
             result = await method(**params)
-            
+
             # 根据返回值记录日志
-            if result is False:
+            success = result is not False
+            if not success:
                 _LOGGER.error("服务调用失败: %s", service_name)
             else:
                 _LOGGER.info("服务调用成功: %s", service_name)
-        
+
+            return {"success": success, "service": service_name}
+
         return handler
     
     def register_services(self, schemas: dict) -> None:

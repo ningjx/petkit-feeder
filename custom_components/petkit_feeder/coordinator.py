@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import socket
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
-import asyncio
 import types
 
 import aiohttp
+from homeassistant.config_entries import ConfigEntryAuthFailed
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .pypetkitapi.client import PetKitClient
@@ -61,7 +64,8 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         self._locale: str = "zh_CN"
         self._plan_refresh_unsub: Any = None
         self._device: PetkitDevice | None = None
-        
+        self._version: str = self._load_version()
+
         self._init_timezone()
         self._init_locale()
         
@@ -84,6 +88,22 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             name=DOMAIN,
             update_interval=update_interval,
         )
+
+    def _load_version(self) -> str:
+        """从 manifest.json 读取版本号."""
+        manifest_path = Path(__file__).parent / "manifest.json"
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+                return manifest.get("version", "unknown")
+        except Exception as err:
+            _LOGGER.warning("无法读取 manifest.json: %s", err)
+            return "unknown"
+
+    @property
+    def version(self) -> str:
+        """返回集成版本."""
+        return self._version
 
     def _init_timezone(self) -> None:
         """初始化时区设置（自动获取，优先 HA 系统时区）."""
@@ -310,7 +330,7 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             
         except PetkitAuthenticationError as err:
             _LOGGER.error("认证失败：%s", err)
-            raise UpdateFailed(f"认证失败：{err}") from err
+            raise ConfigEntryAuthFailed(f"认证失败，请重新登录：{err}") from err
         except PypetkitError as err:
             _LOGGER.error("PetKit API 请求失败：%s", err)
             raise UpdateFailed(f"API 请求失败：{err}") from err

@@ -3,15 +3,88 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from typing import Any, Callable
+
+from homeassistant.components.binary_sensor import BinarySensorEntityDescription, BinarySensorDeviceClass
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from .pypetkitapi.feeder_container import Feeder
 
-from .const import DOMAIN
+from .const import DOMAIN, LOW_FOOD_THRESHOLD
 from .coordinator import PetkitDataUpdateCoordinator
 from .entities import PetkitBinarySensorEntity
+from .pypetkitapi.feeder_container import Feeder
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(kw_only=True)
+class PetkitBinarySensorEntityDescription(BinarySensorEntityDescription):
+    """描述 Petkit 二进制传感器实体."""
+
+    value_fn: Callable[[Feeder], bool | None] | None = None
+
+
+BINARY_SENSORS: tuple[PetkitBinarySensorEntityDescription, ...] = (
+    PetkitBinarySensorEntityDescription(
+        key="online",
+        translation_key="online",
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        icon="mdi:wifi",
+        value_fn=lambda device: (
+            getattr(device, "is_online", None)
+            or (getattr(getattr(device, "state", None), "overall", None) == 1)
+            or (getattr(getattr(device, "state", None), "wifi", None) is not None)
+        ),
+    ),
+    PetkitBinarySensorEntityDescription(
+        key="low_food",
+        translation_key="low_food",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:alert-circle",
+        value_fn=lambda device: _get_low_food_status(device),
+    ),
+    PetkitBinarySensorEntityDescription(
+        key="battery_status",
+        translation_key="battery_status",
+        device_class=BinarySensorDeviceClass.POWER,
+        icon="mdi:battery",
+        value_fn=lambda device: (
+            getattr(getattr(device, "state", None), "battery_status", None) == 1
+            if getattr(getattr(device, "state", None), "battery_status", None) is not None
+            else None
+        ),
+    ),
+    PetkitBinarySensorEntityDescription(
+        key="battery_power",
+        translation_key="battery_power",
+        device_class=BinarySensorDeviceClass.POWER,
+        icon="mdi:battery",
+        value_fn=lambda device: (
+            getattr(getattr(device, "state", None), "battery_power", None) == 1
+            if getattr(getattr(device, "state", None), "battery_power", None) is not None
+            else None
+        ),
+    ),
+)
+
+
+def _get_low_food_status(device: Feeder) -> bool | None:
+    """获取缺粮状态."""
+    food_level = None
+    if hasattr(device, "desiccant_left_percent"):
+        food_level = device.desiccant_left_percent
+    elif hasattr(device, "food_level"):
+        food_level = device.food_level
+
+    if food_level is None:
+        state = getattr(device, "state", None)
+        food_flag = getattr(state, "food", None) if state is not None else None
+        if food_flag is None:
+            return None
+        return food_flag == 0
+
+    return food_level < LOW_FOOD_THRESHOLD
 
 
 async def async_setup_entry(
@@ -21,38 +94,35 @@ async def async_setup_entry(
 ) -> None:
     """设置二进制传感器实体."""
     coordinator: PetkitDataUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
-    
-    entities = [
-        PetkitOnlineSensor(coordinator, config_entry),
-    ]
-    
-    # 添加缺粮警告传感器（如果设备支持）
-    device = coordinator.data.get("device_info") if coordinator.data else None
-    if device:
-        # 检查是否有粮量信息
-        if hasattr(device, "food_level") or hasattr(device, "desiccant_left_percent"):
-            entities.append(PetkitLowFoodSensor(coordinator, config_entry))
-        # 检查是否有电池状态信息
-        state = getattr(device, "state", None)
-        if state and hasattr(state, "battery_status"):
-            entities.append(PetkitBatteryStatusSensor(coordinator, config_entry))
-        if state and hasattr(state, "battery_power"):
-            entities.append(PetkitBatteryPowerSensor(coordinator, config_entry))
-    
+
+    entities = []
+
+    # 添加所有二进制传感器
+    for description in BINARY_SENSORS:
+        entities.append(PetkitBinarySensor(coordinator, config_entry, description))
+
     async_add_entities(entities)
 
 
-class PetkitBinarySensorBase(PetkitBinarySensorEntity):
-    """小佩二进制传感器基类."""
+class PetkitBinarySensor(PetkitBinarySensorEntity):
+    """二进制传感器实体."""
+
+    entity_description: PetkitBinarySensorEntityDescription
 
     def __init__(
         self,
         coordinator: PetkitDataUpdateCoordinator,
         config_entry,
+        entity_description: PetkitBinarySensorEntityDescription,
     ) -> None:
         """初始化二进制传感器."""
+        # 先设置 entity_description 和 translation_key，再调用 super().__init__
+        self.entity_description = entity_description
+        self._attr_translation_key = entity_description.translation_key
         super().__init__(coordinator, config_entry)
-        
+        self._attr_unique_id = f"{self._device_id}_{entity_description.key}"
+        self.entity_id = f"binary_sensor.petkit_feeder_{self._device_id}_{entity_description.key}"
+
         _LOGGER.debug(
             "[PetkitFeeder] BinarySensor initialized: entity_id=%s, unique_id=%s, device_id=%s",
             self.entity_id,
@@ -66,113 +136,10 @@ class PetkitBinarySensorBase(PetkitBinarySensorEntity):
             return None
         return self.coordinator.data.get("device_info")
 
-
-class PetkitOnlineSensor(PetkitBinarySensorBase):
-    """在线状态传感器."""
-
-    _attr_translation_key = "online"
-    _attr_device_class = "connectivity"
-    _attr_icon = "mdi:wifi"
-
     @property
     def is_on(self) -> bool | None:
-        """返回在线状态."""
+        """返回传感器状态."""
         device = self._get_device()
-        if not device:
+        if not device or not self.entity_description.value_fn:
             return None
-
-        # 优先使用库自带的在线标志（如果未来提供）
-        if hasattr(device, "is_online"):
-            return device.is_online
-
-        # 当前版本可以根据状态里的 overall / wifi 判断在线
-        state = getattr(device, "state", None)
-        overall = getattr(state, "overall", None) if state is not None else None
-
-        if overall is not None:
-            # overall==1 代表设备工作正常
-            return overall == 1
-
-        wifi = getattr(state, "wifi", None) if state is not None else None
-        if wifi is not None:
-            # 有 WiFi 信息，一般认为在线
-            return True
-
-        return None
-
-
-class PetkitLowFoodSensor(PetkitBinarySensorBase):
-    """缺粮警告传感器."""
-
-    _attr_translation_key = "low_food"
-    _attr_device_class = "problem"
-    _attr_icon = "mdi:alert-circle"
-
-    @property
-    def is_on(self) -> bool | None:
-        """返回缺粮状态."""
-        device = self._get_device()
-        if not device:
-            return None
-
-        # 从 pypetkitapi 的 Feeder 对象获取粮量
-        food_level = None
-        if hasattr(device, "desiccant_left_percent"):
-            food_level = device.desiccant_left_percent
-        elif hasattr(device, "food_level"):
-            food_level = device.food_level
-
-        # 如果没有百分比，退化为根据状态里的 food 标志判断：0=无粮，1=有粮
-        if food_level is None:
-            state = getattr(device, "state", None)
-            food_flag = getattr(state, "food", None) if state is not None else None
-            if food_flag is None:
-                return None
-            # food_flag == 0 认为“缺粮”
-            return food_flag == 0
-
-        return food_level < LOW_FOOD_THRESHOLD
-
-
-# ============ 新增：电池状态传感器 ============
-
-class PetkitBatteryStatusSensor(PetkitBinarySensorBase):
-    """电池状态传感器（有/没有电池）."""
-
-    _attr_translation_key = "battery_status"
-    _attr_icon = "mdi:battery"
-    _attr_device_class = "power"
-
-    @property
-    def is_on(self) -> bool | None:
-        """返回电池状态（True=有电池，False=没有电池）."""
-        device = self._get_device()
-        if not device:
-            return None
-        state = getattr(device, "state", None)
-        if not state:
-            return None
-        battery_status = getattr(state, "battery_status", None)
-        # battery_status=1 表示有电池，0 表示没有
-        return battery_status == 1 if battery_status is not None else None
-
-
-class PetkitBatteryPowerSensor(PetkitBinarySensorBase):
-    """电池供电传感器（是否使用电池供电）."""
-
-    _attr_translation_key = "battery_power"
-    _attr_icon = "mdi:battery"
-    _attr_device_class = "power"
-
-    @property
-    def is_on(self) -> bool | None:
-        """返回电池供电状态（True=电池供电，False=电源供电）."""
-        device = self._get_device()
-        if not device:
-            return None
-        state = getattr(device, "state", None)
-        if not state:
-            return None
-        battery_power = getattr(state, "battery_power", None)
-        # battery_power=1 表示电池供电，0 表示电源供电
-        return battery_power == 1 if battery_power is not None else None
+        return self.entity_description.value_fn(device)

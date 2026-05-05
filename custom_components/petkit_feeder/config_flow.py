@@ -6,8 +6,8 @@ import logging
 import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 from .pypetkitapi.client import PetKitClient
 from .pypetkitapi.exceptions import PetkitAuthenticationError, PypetkitError
 from .pypetkitapi.feeder_container import Feeder
@@ -43,7 +43,7 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """处理用户配置步骤."""
         errors = {}
 
@@ -141,7 +141,7 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_device(
         self, user_input: dict | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """处理设备选择步骤."""
         if user_input is not None:
             return await self._async_create_entry(user_input["device_id"])
@@ -164,7 +164,7 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _async_create_entry(
         self,
         device_id: str,
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """创建配置条目."""
         # 获取选中的设备名称
         device_name = DEFAULT_NAME
@@ -215,7 +215,7 @@ class PetkitOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(
         self, user_input: dict | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """管理选项."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)

@@ -400,12 +400,11 @@ static styles = css`
 | 目录 | 职责 |
 |------|------|
 | `data/` | 解析 HA 实体数据 → TimelineItem |
-| `services/` | 封装 HA 服务调用（save_feed, toggle, manual_feed） |
+| `services/` | 封装 HA 服务调用（save_feed, toggle, manual_feed, button） |
 | `state/` | 缓存管理（commit/rollback）、变更检测 |
-| `handlers/` | 用户交互事件处理（编辑、焦点、保存） |
-| `styles/` | CSS-in-JS 样式定义 |
+| `styles/` | CSS-in-JS 样式定义（base, components, form） |
 | `localize/` | 多语言文本 |
-| `utils/` | 工具函数（时间格式化、数据转换） |
+| `utils/` | 工具函数（时间格式化、数据转换、图标、时间线辅助） |
 
 ### 乐观更新模式
 

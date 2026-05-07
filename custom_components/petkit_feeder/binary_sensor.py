@@ -32,9 +32,8 @@ BINARY_SENSORS: tuple[PetkitBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         icon="mdi:wifi",
         value_fn=lambda device: (
-            getattr(device, "is_online", None)
-            or (getattr(getattr(device, "state", None), "overall", None) == 1)
-            or (getattr(getattr(device, "state", None), "wifi", None) is not None)
+            (getattr(getattr(device, "state", None), "overall", None) == 1)
+            and (getattr(getattr(device, "state", None), "wifi", None) is not None)
         ),
     ),
     PetkitBinarySensorEntityDescription(

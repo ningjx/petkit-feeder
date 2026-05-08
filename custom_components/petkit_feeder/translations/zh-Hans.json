@@ -9,6 +9,13 @@
           "username": "账号（手机号/邮箱）",
           "password": "密码",
           "region": "地区"
+        },
+        "data_options": {
+          "region": {
+            "CN": "中国",
+            "US": "美国",
+            "EU": "欧洲"
+          }
         }
       },
       "device": {
@@ -36,6 +43,12 @@
         "data": {
           "refresh_mode": "刷新模式",
           "refresh_interval": "刷新间隔（秒，{min_interval}-{max_interval}）"
+        },
+        "data_options": {
+          "refresh_mode": {
+            "auto": "定时刷新",
+            "manual": "手动刷新"
+          }
         }
       }
     }

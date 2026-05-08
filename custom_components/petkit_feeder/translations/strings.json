@@ -9,6 +9,13 @@
           "username": "Account (Phone/Email)",
           "password": "Password",
           "region": "Region"
+        },
+        "data_options": {
+          "region": {
+            "CN": "China",
+            "US": "United States",
+            "EU": "Europe"
+          }
         }
       },
       "device": {
@@ -36,6 +43,12 @@
         "data": {
           "refresh_mode": "Refresh Mode",
           "refresh_interval": "Refresh Interval (seconds, {min_interval}-{max_interval})"
+        },
+        "data_options": {
+          "refresh_mode": {
+            "auto": "Auto Refresh",
+            "manual": "Manual Refresh"
+          }
         }
       }
     }

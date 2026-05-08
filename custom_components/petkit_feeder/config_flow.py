@@ -8,6 +8,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import callback
+from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 from .pypetkitapi.client import PetKitClient
 from .pypetkitapi.exceptions import PetkitAuthenticationError, PypetkitError
 from .pypetkitapi.feeder_container import Feeder
@@ -76,7 +77,7 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     feeder_devices = []
                     for dev_id, device in client.petkit_entities.items():
                         if isinstance(device, Feeder):
-                            device_name = device.name if hasattr(device, 'name') else f"喂食器 {dev_id}"
+                            device_name = device.name if hasattr(device, 'name') else f"Feeder {dev_id}"
                             feeder_devices.append({
                                 "id": str(dev_id),
                                 "name": device_name,
@@ -112,12 +113,11 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required("username", default=username): str,
                     vol.Required("password", default=password): str,
-                    vol.Optional("region", default=region): vol.In(
-                        {
-                            "CN": "中国大陆",
-                            "US": "美国",
-                            "EU": "欧洲",
-                        }
+                    vol.Optional("region", default=region): SelectSelector(
+                        SelectSelectorConfig(
+                            options=["CN", "US", "EU"],
+                            translation_key="region",
+                        )
                     ),
                 }
             ),
@@ -132,7 +132,7 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     for user in account.user_list:
                         if user.is_owner == 1:
                             return {
-                                "user_name": user.user_name or "未知用户",
+                                "user_name": user.user_name or "Unknown User",
                                 "user_id": user.user_id or 0,
                             }
         except Exception as e:
@@ -235,11 +235,11 @@ class PetkitOptionsFlowHandler(config_entries.OptionsFlow):
                     vol.Required(
                         CONF_REFRESH_MODE,
                         default=refresh_mode,
-                    ): vol.In(
-                        {
-                            REFRESH_MODE_AUTO: "定时刷新",
-                            REFRESH_MODE_MANUAL: "手动刷新",
-                        }
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[REFRESH_MODE_AUTO, REFRESH_MODE_MANUAL],
+                            translation_key="refresh_mode",
+                        )
                     ),
                     vol.Required(
                         CONF_REFRESH_INTERVAL,

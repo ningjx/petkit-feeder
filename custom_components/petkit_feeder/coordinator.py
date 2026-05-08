@@ -280,7 +280,7 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
                         break
             
             if not device_data:
-                raise UpdateFailed("未找到任何喂食器设备")
+                raise UpdateFailed("No feeder device found")
             
             self._device = DeviceFactory.create(device_data)
 
@@ -330,13 +330,13 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             
         except PetkitAuthenticationError as err:
             _LOGGER.error("认证失败：%s", err)
-            raise ConfigEntryAuthFailed(f"认证失败，请重新登录：{err}") from err
+            raise ConfigEntryAuthFailed(f"Authentication failed, please login again: {err}") from err
         except PypetkitError as err:
             _LOGGER.error("PetKit API 请求失败：%s", err)
-            raise UpdateFailed(f"API 请求失败：{err}") from err
+            raise UpdateFailed(f"API request failed: {err}") from err
         except Exception as err:
             _LOGGER.error("数据更新失败：%s", err)
-            raise UpdateFailed(f"数据更新失败：{err}") from err
+            raise UpdateFailed(f"Data update failed: {err}") from err
 
     async def async_request_refresh(self) -> None:
         """手动刷新数据."""
@@ -614,11 +614,11 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         
         device = self.data.get("device_info") if self.data else None
         if not device:
-            raise ValueError("设备数据不可用")
+            raise ValueError("Device data not available")
         
         multi_feed_item = getattr(device, "multi_feed_item", None)
         if not multi_feed_item:
-            raise ValueError("设备不支持多日计划")
+            raise ValueError("Device does not support multi-day schedule")
         
         feed_daily_list = getattr(multi_feed_item, "feed_daily_list", [])
         

@@ -15,6 +15,7 @@ from .const import DOMAIN
 from .coordinator import PetkitDataUpdateCoordinator
 from .entities import PetkitSensorEntity
 from .pypetkitapi.feeder_container import Feeder
+from .utils import get_status_text
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -353,15 +354,15 @@ class PetkitFeedingScheduleSensor(PetkitSensorBase):
         """返回下次喂食时间."""
         device = self._get_device()
         if not device:
-            return "离线"
+            return get_status_text("offline", self._get_language())
 
         multi_feed_item = getattr(device, "multi_feed_item", None)
         if not multi_feed_item:
-            return "无计划"
+            return get_status_text("no_plan", self._get_language())
 
         feed_daily_list = getattr(multi_feed_item, "feed_daily_list", None)
         if not feed_daily_list:
-            return "无计划"
+            return get_status_text("no_plan", self._get_language())
 
         now = datetime.now()
         current_weekday = now.weekday() + 1
@@ -409,7 +410,7 @@ class PetkitFeedingScheduleSensor(PetkitSensorBase):
             _, time_str, name, amount = today_items[0]
             return f"{time_str} {name} {amount}g"
 
-        return "今日无待喂食"
+        return get_status_text("no_feeding_today", self._get_language())
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -426,16 +427,6 @@ class PetkitFeedingScheduleSensor(PetkitSensorBase):
         if not feed_daily_list:
             return {}
 
-        weekday_names = {
-            1: "周一",
-            2: "周二",
-            3: "周三",
-            4: "周四",
-            5: "周五",
-            6: "周六",
-            7: "周日",
-        }
-
         schedule = {}
 
         for daily_list in feed_daily_list:
@@ -444,7 +435,6 @@ class PetkitFeedingScheduleSensor(PetkitSensorBase):
             if not repeats or repeats < 1 or repeats > 7:
                 continue
 
-            weekday_name = weekday_names[repeats]
             items = getattr(daily_list, "items", [])
             schedule_items = []
 
@@ -466,8 +456,9 @@ class PetkitFeedingScheduleSensor(PetkitSensorBase):
                         "amount": amount,
                     })
 
-            schedule[weekday_name] = {
+            schedule[repeats] = {
                 "suspended": suspended,
+                "weekday_name": repeats,
                 "items": schedule_items,
             }
 
@@ -485,11 +476,11 @@ class PetkitFeedingRecordsSensor(PetkitSensorBase):
         """返回本周最新喂食时间."""
         device = self._get_device()
         if not device:
-            return "离线"
+            return get_status_text("offline", self._get_language())
 
         device_records = getattr(device, "device_records", None)
         if not device_records:
-            return "无记录"
+            return get_status_text("no_records", self._get_language())
 
         latest_item = None
         latest_completed_at = None

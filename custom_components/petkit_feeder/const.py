@@ -2,7 +2,7 @@
 
 DOMAIN = "petkit_feeder"
 
-DEFAULT_NAME = "PetKit 喂食器"
+DEFAULT_NAME = "PetKit Feeder"
 
 LOW_FOOD_THRESHOLD = 20
 

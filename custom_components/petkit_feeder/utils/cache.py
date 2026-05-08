@@ -1,45 +1,38 @@
 """缓存工具函数"""
 
-from functools import lru_cache
 from datetime import datetime
 
 
-@lru_cache(maxsize=128)
-def cached_format_time(seconds: int, date_key: str) -> str:
-    """缓存的时间格式化函数.
-    
-    Args:
-        seconds: 从 00:00 开始的秒数
-        date_key: 日期键（用于缓存失效）
-        
-    Returns:
-        格式化的时间字符串 HH:MM
-    """
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    return f"{hours:02d}:{minutes:02d}"
+# 多语言状态文本映射
+STATUS_TEXTS: dict[str, dict[str, str]] = {
+    "en": {
+        "offline": "Offline",
+        "no_plan": "No Plan",
+        "no_feeding_today": "No feeding today",
+        "no_records": "No records",
+    },
+    "zh": {
+        "offline": "离线",
+        "no_plan": "无计划",
+        "no_feeding_today": "今日无待喂食",
+        "no_records": "无记录",
+    },
+}
 
 
-@lru_cache(maxsize=32)
-def cached_get_weekday_name(weekday: int) -> str:
-    """缓存的星期名称获取.
-    
+def get_status_text(key: str, language: str = "en") -> str:
+    """获取状态文本（多语言支持）.
+
     Args:
-        weekday: 星期几（1-7）
-        
+        key: 状态文本 key（如 "offline", "no_plan"）
+        language: 语言代码（"en" 或 "zh"）
+
     Returns:
-        星期名称
+        状态文本
     """
-    weekday_names = {
-        1: "周一",
-        2: "周二",
-        3: "周三",
-        4: "周四",
-        5: "周五",
-        6: "周六",
-        7: "周日",
-    }
-    return weekday_names.get(weekday, "未知")
+    lang_key = "zh" if language.startswith("zh") else "en"
+    texts = STATUS_TEXTS.get(lang_key, STATUS_TEXTS["en"])
+    return texts.get(key, key)
 
 
 class DataCache:

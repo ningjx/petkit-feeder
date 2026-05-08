@@ -67,3 +67,7 @@ class PetkitEntity(CoordinatorEntity):
         if not device:
             return None
         return getattr(device, "state", None)
+
+    def _get_language(self) -> str:
+        """获取用户当前语言."""
+        return self.hass.config.language if self.hass else "en"

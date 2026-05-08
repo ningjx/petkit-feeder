@@ -3,36 +3,6 @@
 from datetime import datetime
 
 
-WEEKDAY_NAMES = {
-    1: "周一",
-    2: "周二",
-    3: "周三",
-    4: "周四",
-    5: "周五",
-    6: "周六",
-    7: "周日",
-}
-
-
-def get_today_weekday() -> int:
-    """获取今天是周几（1-7，周一=1，周日=7）.
-    
-    Returns:
-        周几数字（1-7）
-    """
-    day = datetime.now().weekday()
-    return day + 1 if day != 6 else 7
-
-
-def get_today_weekday_name() -> str:
-    """获取今天是周几的中文名称.
-    
-    Returns:
-        周几名称（如 "周一"）
-    """
-    return WEEKDAY_NAMES.get(get_today_weekday(), "未知")
-
-
 def get_today_date() -> str:
     """获取今日日期字符串（YYYY-MM-DD）.
     

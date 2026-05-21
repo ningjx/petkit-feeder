@@ -460,6 +460,30 @@ export interface ChangedDay {
 
 ### 编译与发布
 
+#### 使用构建脚本（推荐）
+
+项目提供了 PowerShell 构建脚本，位于 `scripts/deploy.ps1`：
+
+```powershell
+# 普通构建
+.\scripts\deploy.ps1
+
+# 强制重新构建（清除 node_modules 和 dist）
+.\scripts\deploy.ps1 -Force
+
+# 查看帮助
+.\scripts\deploy.ps1 -Help
+```
+
+脚本功能：
+- 自动检查 npm 环境
+- 按需安装依赖（node_modules 不存在时自动安装）
+- 执行 `npm run build` 构建
+- 验证输出文件并显示大小
+- 输出位置：`petkit_feeder_card/dist/petkit-feeder-card.js`
+
+#### 手动构建
+
 ```bash
 # 开发模式（热重载）
 npm run dev
@@ -474,6 +498,49 @@ npm run build
 # 3. 推送: git push && git push origin v0.4.1
 # GitHub Actions 自动构建
 ```
+
+### 图标规范
+
+所有 SVG 图标定义在 `src/utils/icons.ts`，使用 Lit 的 `svg` 标签模板：
+
+```typescript
+import { svg } from 'lit';
+
+export const SYNC_ICON = svg`
+  <svg viewBox="0 0 1024 1024" class="btn-svg">
+    <path d="..." fill="#2c2c2c"/>
+  </svg>
+`;
+```
+
+图标要求：
+- 使用 `viewBox` 而非固定宽高
+- 应用 `.btn-svg` 类名保持样式一致
+- fill 颜色使用 `#2c2c2c` 或 `currentColor`
+- 导出后需在 `src/utils/index.ts` 中自动导出（已配置 `export *`）
+
+### 本地化规范
+
+多语言文本位于 `src/localize/zh.json` 和 `src/localize/en.json`：
+
+```json
+{
+  "button.sync": "同步计划",
+  "confirm.sync_plan": "确定将一周七天的计划都同步为 {day} 的计划吗？"
+}
+```
+
+使用方式：
+```typescript
+this._localize('button.sync')
+this._localize('confirm.sync_plan', { day: this._localize('weekday.1') })
+```
+
+### 样式调整注意事项
+
+- 按钮间距调整使用负 margin 技巧：`.sync-btn { margin-right: -5px }` 可将 gap 从 6px 减到 1px
+- 样式文件分层：`base.ts`（基础）、`components.ts`（组件）、`form.ts`（表单）
+- 通过 `combineStyles()` 函数合并所有样式
 
 ## 禁止事项
 
@@ -564,7 +631,17 @@ npm run build
    ```
 
 2. **编译构建**
+   
+   **推荐使用脚本**（位于主仓库 `scripts/deploy.ps1`）：
+   ```powershell
+   # 在主仓库根目录执行
+   .\scripts\deploy.ps1           # 普通构建
+   .\scripts\deploy.ps1 -Force    # 强制重新构建（清除缓存）
+   ```
+   
+   或手动构建：
    ```bash
+   cd petkit_feeder_card
    npm run build
    # 输出: dist/petkit-feeder-card.js
    ```
@@ -577,16 +654,21 @@ npm run build
    ```bash
    # 提交源码
    git add src/
-   git commit -m "fix: 修复描述"
+   git commit -m "feat: 新功能描述"
    
    # 更新版本号（package.json）
    # 重新推送 tag 触发自动构建
-   git tag -d v0.4.0
-   git push origin :refs/tags/v0.4.0
-   git tag v0.4.0
+   git tag -d v0.4.1
+   git push origin :refs/tags/v0.4.1
+   git tag v0.4.1
    git push
-   git push origin v0.4.0
+   git push origin v0.4.1
    ```
+
+5. **常见问题**
+   - TypeScript 类型错误：构建时遇到类型警告但不影响输出，可忽略或修复类型定义
+   - 依赖问题：使用 `-Force` 参数重新构建可解决大多数依赖问题
+   - 图标不显示：检查 `icons.ts` 中是否正确导出，并在 `utils/index.ts` 中有 `export *`
 
 ### 同步更新（后端 + 前端）
 

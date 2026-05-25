@@ -546,10 +546,12 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
                 amount=feed_amount,
                 api_client=self._api,
             )
-            
+
             if result:
+                # 延迟 5 秒刷新，等待服务器更新数据
+                await asyncio.sleep(5)
                 await self.async_request_refresh()
-            
+
             return result
         except Exception as err:
             _LOGGER.error("手动出粮失败: %s", err, exc_info=True)
@@ -830,10 +832,12 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
                 weekly_plan=final_plan,
                 api_client=self._api,
             )
-            
+
             if result:
+                # 延迟 5 秒刷新，等待服务器更新数据
+                await asyncio.sleep(5)
                 await self.async_request_refresh()
-            
+
             _LOGGER.info(
                 "保存喂食计划成功: 变更 %d 天，共提交 7 天",
                 len(weekly_plan)

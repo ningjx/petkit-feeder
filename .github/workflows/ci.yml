@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       force_release:
-        description: '强制发布（即使版本未更新）'
+        description: '重新上传当前版本的发布包（已有标签须指向当前提交）'
         required: false
         default: false
         type: boolean
@@ -18,9 +18,54 @@ permissions: {}
 jobs:
   validate:
     runs-on: "ubuntu-latest"
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.package.outputs.tag }}
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: petkit_feeder_card/package-lock.json
+
+      - name: Build Lovelace card
+        working-directory: petkit_feeder_card
+        env:
+          BUILD_DIR: tmp
+        run: |
+          npm ci --ignore-scripts --registry=https://registry.npmjs.org/ --replace-registry-host=registry.npmmirror.com
+          npm run build
+
+      - name: Bundle card and create release ZIP
+        id: package
+        shell: python
+        run: |
+          import json
+          import os
+          from pathlib import Path
+          import shutil
+
+          component = Path("custom_components/petkit_feeder")
+          bundle = Path("petkit_feeder_card/tmp/petkit-feeder-card.js")
+          if not bundle.is_file() or bundle.stat().st_size == 0:
+              raise SystemExit("The Lovelace card build did not produce a bundle")
+
+          www = component / "www"
+          www.mkdir(exist_ok=True)
+          shutil.copyfile(bundle, www / bundle.name)
+          shutil.make_archive("petkit_feeder", "zip", root_dir=component)
+
+          version = json.loads((component / "manifest.json").read_text(encoding="utf-8"))["version"]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print(f"tag=v{version}", file=output)
 
       - name: HACS validation
         uses: "hacs/action@main"
@@ -30,79 +75,99 @@ jobs:
       - name: Hassfest validation
         uses: "home-assistant/actions/hassfest@master"
 
-  check-version:
-    runs-on: ubuntu-latest
-    needs: validate
-    if: github.ref == 'refs/heads/main'
-    outputs:
-      should_release: ${{ steps.check.outputs.should_release }}
-      new_tag: ${{ steps.check.outputs.new_tag }}
-    steps:
-      - uses: actions/checkout@v4
+      - name: Save validated release ZIP
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
         with:
-          fetch-depth: 0
-
-      - name: Check version
-        id: check
-        run: |
-          MANIFEST_VERSION=$(jq -r '.version' custom_components/petkit_feeder/manifest.json)
-          LATEST_TAG=$(git tag --sort=-v:refname | grep "^v" | head -1 || echo "v0.0.0")
-          TAG_VERSION=${LATEST_TAG#v}
-
-          SHOULD_RELEASE="false"
-          NEW_TAG=""
-
-          if [[ "$MANIFEST_VERSION" > "$TAG_VERSION" ]]; then
-            SHOULD_RELEASE="true"
-            NEW_TAG="v${MANIFEST_VERSION}"
-            echo "版本更新: $TAG_VERSION → $MANIFEST_VERSION"
-          elif [[ "${{ inputs.force_release }}" == "true" ]]; then
-            SHOULD_RELEASE="true"
-            NEW_TAG="v${MANIFEST_VERSION}"
-            echo "强制发布: $NEW_TAG"
-          else
-            echo "版本未更新 ($MANIFEST_VERSION ≤ $TAG_VERSION)"
-          fi
-
-          echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
-          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-
-  create-tag:
-    needs: check-version
-    if: needs.check-version.outputs.should_release == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create and push tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ needs.check-version.outputs.new_tag }}"
-          git push origin "${{ needs.check-version.outputs.new_tag }}"
+          name: petkit-feeder-zip
+          path: petkit_feeder.zip
+          if-no-files-found: error
 
   release:
     runs-on: "ubuntu-latest"
     needs: validate
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    concurrency:
+      group: petkit-feeder-release-${{ needs.validate.outputs.tag }}
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
+        with:
+          fetch-depth: 0
 
-      - name: Create zip
+      - name: Check release version
+        id: version
+        shell: python
+        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          FORCE_RELEASE: ${{ inputs.force_release }}
         run: |
-          cd custom_components/petkit_feeder
-          zip -r ../../petkit_feeder.zip .
-          cd ../..
+          import os
+          import re
+          import subprocess
 
-      - name: Release
+          tag = os.environ["RELEASE_TAG"]
+          ref = os.environ["GITHUB_REF"]
+          sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          force = os.environ.get("FORCE_RELEASE") == "true"
+
+          if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
+              raise SystemExit(f"Expected a release version in vX.Y.Z form, got {tag}")
+          if ref.startswith("refs/tags/") and ref != f"refs/tags/{tag}":
+              raise SystemExit(f"{ref} does not match the manifest version {tag}")
+
+          tags = subprocess.check_output(["git", "tag", "--list", "v*"], text=True).splitlines()
+          existing_tag = tag in tags
+          if existing_tag:
+              tag_commit = subprocess.check_output(
+                  ["git", "rev-parse", f"refs/tags/{tag}^{{commit}}"], text=True
+              ).strip()
+              if tag_commit != sha:
+                  message = f"{tag} already points to a different commit. Bump the manifest version."
+                  if force or ref.startswith("refs/tags/"):
+                      raise SystemExit(message)
+                  print(message)
+                  raise SystemExit(0)
+          elif ref != "refs/heads/main":
+              raise SystemExit(f"The release tag {tag} no longer exists")
+          elif not force:
+              version = tuple(map(int, tag[1:].split(".")))
+              versions = [
+                  tuple(map(int, item[1:].split("."))) for item in tags
+                  if re.fullmatch(r"v\d+\.\d+\.\d+", item)
+              ]
+              if versions and version <= max(versions):
+                  print(f"{tag} is not newer than the latest release tag")
+                  raise SystemExit(0)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print(f"tag={tag}", file=output)
+              print(f"commit={sha}", file=output)
+              print(f"create_tag={str(not existing_tag).lower()}", file=output)
+
+      - name: Download validated release ZIP
+        if: steps.version.outputs.tag != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: petkit-feeder-zip
+
+      - name: Push release tag
+        if: steps.version.outputs.create_tag == 'true'
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_COMMIT: ${{ steps.version.outputs.commit }}
+        run: git push origin "$RELEASE_COMMIT:refs/tags/$RELEASE_TAG"
+
+      - name: Publish release
+        if: steps.version.outputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ steps.version.outputs.commit }}
           files: petkit_feeder.zip
+          fail_on_unmatched_files: true
+          overwrite_files: ${{ inputs.force_release == true }}
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

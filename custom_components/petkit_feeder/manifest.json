@@ -1,12 +1,14 @@
 {
   "domain": "petkit_feeder",
   "name": "Petkit Feeder",
+  "after_dependencies": ["lovelace"],
   "codeowners": ["@ningjx"],
   "config_flow": true,
+  "dependencies": ["http"],
   "documentation": "https://github.com/ningjx/petkit-feeder",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/ningjx/petkit-feeder/issues",
   "loggers": ["petkit_feeder"],
   "requirements": ["m3u8>=3.0.0"],
-  "version": "1.1.2"
+  "version": "1.2.0"
 }

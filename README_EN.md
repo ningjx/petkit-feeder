@@ -39,17 +39,18 @@ Native Home Assistant integration for PetKit smart feeders.
 
 ### Manual Installation
 
-1. Copy `custom_components/petkit_feeder` to your Home Assistant `custom_components` directory
-2. Restart Home Assistant
-3. Settings → Devices & Services → Add Integration → Search for "Petkit"
+1. Download `petkit_feeder.zip` from GitHub Releases
+2. Extract the ZIP contents into `custom_components/petkit_feeder` in your Home Assistant configuration directory
+3. Restart Home Assistant
+4. Settings → Devices & Services → Add Integration → Search for "Petkit"
 
 ## Lovelace Card
 
-This integration comes with a dedicated card for visual operation.
+The card ships with the integration. Home Assistant registers it on startup when dashboard resources are managed in storage mode. You can then add it to your dashboard.
 
-**Card Repository**: https://github.com/ningjx/petkit-feeder-card
+If you installed the standalone card, uninstall it or remove its old JavaScript resource when upgrading, then restart Home Assistant. Existing dashboard card configurations continue to work.
 
-**Configuration example after installing the card**:
+If you manage dashboard resources in YAML, add `/petkit_feeder/petkit-feeder-card.js` to `lovelace.resources` as a `module`.
 
 ```yaml
 type: custom:petkit-feeder-card

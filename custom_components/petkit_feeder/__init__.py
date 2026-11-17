@@ -7,7 +7,9 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.typing import ConfigType
 
+from .card import async_setup_card
 from .const import DOMAIN
 from .coordinator import PetkitDataUpdateCoordinator
 from .services import FeedingService, SERVICE_SCHEMAS
@@ -21,6 +23,12 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
     Platform.SWITCH,
 ]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """在每次 Home Assistant 启动时注册一次卡片."""
+    await async_setup_card(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

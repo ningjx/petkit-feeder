@@ -1,0 +1,57 @@
+{
+  "common.loading": "Loading...",
+  "common.loading_editor": "Loading...",
+  "error.entity_not_found": "Entity not found: {entityId}",
+  "error.device_or_entity_required": "device_id or entity is required",
+  
+  "button.refresh": "Refresh",
+  "button.manual_feed": "Manual Feed",
+  "button.add_plan": "Add Plan",
+  "button.delete_plan": "Delete Plan",
+  "button.sync": "Sync Plan",
+
+  "confirm.sync_plan": "Are you sure you want to sync all 7 days' plans to {day}'s plan? If {day} has no plans, all feeding plans will be cleared. This will overwrite plans on other days.",
+
+  "error.sync_failed": "Sync failed, please try again later",
+  
+  "status.online": "Online",
+  "status.offline": "Offline",
+  "status.executed": "Executed",
+  "status.expired": "Expired",
+  "status.deleted": "Deleted Plan",
+  "status.click_enable": "Click to enable",
+  "status.click_disable": "Click to disable",
+  
+  "summary.online_status": "Online Status",
+  "summary.planned_feed": "Planned Feed",
+  "summary.actual_feed": "Actual Feed",
+  "summary.manual_feed": "Manual Feed",
+  
+  "editor.device_id": "Device ID",
+  "editor.entity": "Feeding Schedule Entity",
+  "editor.entity_hint": "(optional, auto-detected if device_id provided)",
+  "editor.history_entity": "History Entity",
+  "editor.card_title": "Card Title",
+  "editor.card_title_hint": "(optional, defaults to device name)",
+  "editor.display_control": "Display Options",
+  "editor.show_timeline": "Show Timeline",
+  "editor.show_summary": "Show Summary",
+  "editor.show_actions": "Show Action Buttons",
+  
+  "weekday.1": "Mon",
+  "weekday.2": "Tue",
+  "weekday.3": "Wed",
+  "weekday.4": "Thu",
+  "weekday.5": "Fri",
+  "weekday.6": "Sat",
+  "weekday.7": "Sun",
+  
+  "date.format": "{weekday} {month}/{day}",
+  
+  "timeline.empty": "No feeding plans",
+  
+  "default.plan_name": "Breakfast",
+  "default.device_name": "Petkit Feeder",
+  
+  "placeholder.name": "Name"
+}

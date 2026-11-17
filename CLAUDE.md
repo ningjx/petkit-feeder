@@ -40,7 +40,7 @@ petkit-feeder/                          # 主仓库（Git）
 │   ├── translations/                   # 多语言
 │   └ utils/                            # 工具函数
 │
-├── petkit_feeder_card/                 # 前端卡片（Git Submodule）
+├── petkit_feeder_card/                 # 前端卡片源码与构建配置
 │   ├── src/
 │   │   ├── petkit-feeder-card.ts       # 主组件
 │   │   ├── editor.ts                   # YAML 编辑器配置
@@ -54,20 +54,17 @@ petkit-feeder/                          # 主仓库（Git）
 │   │   └ utils/                        # 工具函数
 │   ├── dist/                           # 编译输出
 │   │   └ petkit-feeder-card.js
-│   ├── hacs.json                       # 前端 HACS 配置
 │   ├── package.json                    # npm 配置
+│   ├── package-lock.json               # npm 依赖锁文件
 │   └ tsconfig.json                    # TypeScript 配置
 │
 ├── docs/                               # 文档图片
 ├── scripts/                            # 构建脚本
-├── hacs.json                           # 后端 HACS 配置
+├── hacs.json                           # 集成和卡片的 HACS 发布配置
 ├── README.md                           # 项目说明
 ├── CHANGELOG.md                        # 更新日志
-├── .gitmodules                         # Submodule 配置
 └ CLAUDE.md                            # 本文件
 ```
-
-> **注意**：`petkit_feeder_card/` 是 Git Submodule，指向独立仓库 `https://github.com/ningjx/petkit-feeder-card.git`
 
 ## 命名规范
 
@@ -468,7 +465,7 @@ export interface ChangedDay {
 # 普通构建
 .\scripts\deploy.ps1
 
-# 强制重新构建（清除 node_modules 和 dist）
+# 按锁文件重新安装依赖并构建
 .\scripts\deploy.ps1 -Force
 
 # 查看帮助
@@ -485,18 +482,14 @@ export interface ChangedDay {
 #### 手动构建
 
 ```bash
-# 开发模式（热重载）
-npm run dev
+cd petkit_feeder_card
+npm ci --ignore-scripts
 
-# 编译生产版本
+# 单次构建，输出 dist/petkit-feeder-card.js
 npm run build
-# 输出: dist/petkit-feeder-card.js
 
-# 发布新版本
-# 1. 更新 package.json version
-# 2. 创建 git tag: git tag v0.4.1
-# 3. 推送: git push && git push origin v0.4.1
-# GitHub Actions 自动构建
+# 监听源码变化并重新构建
+npm start
 ```
 
 ### 图标规范
@@ -626,8 +619,8 @@ this._localize('confirm.sync_plan', { day: this._localize('weekday.1') })
 1. **本地开发**
    ```bash
    cd petkit_feeder_card
-   npm install
-   npm run dev  # 启动热重载开发服务器
+   npm ci --ignore-scripts
+   npm start  # 监听源码变化并重新构建
    ```
 
 2. **编译构建**
@@ -636,7 +629,7 @@ this._localize('confirm.sync_plan', { day: this._localize('weekday.1') })
    ```powershell
    # 在主仓库根目录执行
    .\scripts\deploy.ps1           # 普通构建
-   .\scripts\deploy.ps1 -Force    # 强制重新构建（清除缓存）
+   .\scripts\deploy.ps1 -Force    # 按锁文件重新安装依赖并构建
    ```
    
    或手动构建：
@@ -647,23 +640,12 @@ this._localize('confirm.sync_plan', { day: this._localize('weekday.1') })
    ```
 
 3. **本地测试**
-   - 复制到 HA：`cp dist/petkit-feeder-card.js ~/.homeassistant/www/`
-   - 在 Lovelace 中添加卡片配置测试
+   - 在 HA 的集成目录下创建 `custom_components/petkit_feeder/www/`，把 `dist/petkit-feeder-card.js` 复制进去
+   - 重启 HA，在 Lovelace 中添加卡片配置测试
 
 4. **提交与发布**
-   ```bash
-   # 提交源码
-   git add src/
-   git commit -m "feat: 新功能描述"
-   
-   # 更新版本号（package.json）
-   # 重新推送 tag 触发自动构建
-   git tag -d v0.4.1
-   git push origin :refs/tags/v0.4.1
-   git tag v0.4.1
-   git push
-   git push origin v0.4.1
-   ```
+   - 在主仓库提交前端改动
+   - 按 [HACS 发布指南](docs/hacs-publish-guide.md) 更新集成版本，卡片随集成发布
 
 5. **常见问题**
    - TypeScript 类型错误：构建时遇到类型警告但不影响输出，可忽略或修复类型定义
@@ -672,19 +654,4 @@ this._localize('confirm.sync_plan', { day: this._localize('weekday.1') })
 
 ### 同步更新（后端 + 前端）
 
-当同时更新后端和前端时：
-
-```bash
-# 1. 前端修改 → 编译 → 推送 tag
-cd petkit_feeder_card
-npm run build
-git add . && git commit -m "更新卡片"
-git tag -d v0.4.0 && git push origin :refs/tags/v0.4.0
-git tag v0.4.0 && git push && git push origin v0.4.0
-
-# 2. 回到主仓库，更新 submodule 引用
-cd ..
-git add petkit_feeder_card
-git commit -m "更新前端卡片 submodule (v0.4.0)"
-git push
-```
+在同一次改动中提交集成和卡片源码。CI 会从同一提交构建卡片并生成集成 ZIP。

@@ -59,6 +59,8 @@ device_id: "YOUR_DEVICE_ID"
 
 > 💡 **提示**：`device_id` 可在集成设备页面的「设备 ID」传感器中获取。
 
+[卡片配置和开发说明](petkit_feeder_card/README.md)
+
 ## 鸣谢
 
 本项目基于 [py-petkit-api](https://github.com/Jezza34000/py-petkit-api) 开发，感谢原作者的贡献。

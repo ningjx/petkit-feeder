@@ -1,0 +1,57 @@
+{
+  "common.loading": "加载中...",
+  "common.loading_editor": "正在加载...",
+  "error.entity_not_found": "实体不存在：{entityId}",
+  "error.device_or_entity_required": "需要定义 device_id 或 entity",
+  
+  "button.refresh": "刷新数据",
+  "button.manual_feed": "手动喂食",
+  "button.add_plan": "新增计划",
+  "button.delete_plan": "删除计划",
+  "button.sync": "同步计划",
+
+  "confirm.sync_plan": "确定将一周七天的计划都同步为 {day} 的计划吗？如果 {day} 没有计划，将清除所有天的喂食计划。此操作将覆盖其他天的计划。",
+
+  "error.sync_failed": "同步计划失败，请稍后重试",
+  
+  "status.online": "在线",
+  "status.offline": "离线",
+  "status.executed": "已执行",
+  "status.expired": "已过期",
+  "status.deleted": "已删除计划",
+  "status.click_enable": "点击启用",
+  "status.click_disable": "点击禁用",
+  
+  "summary.online_status": "在线状态",
+  "summary.planned_feed": "计划喂食",
+  "summary.actual_feed": "实际喂食",
+  "summary.manual_feed": "手动喂食",
+  
+  "editor.device_id": "设备ID",
+  "editor.entity": "喂食计划实体",
+  "editor.entity_hint": "（可选，提供 device_id 时自动推断）",
+  "editor.history_entity": "历史记录实体",
+  "editor.card_title": "卡片标题",
+  "editor.card_title_hint": "（可选，默认使用设备名称）",
+  "editor.display_control": "显示控制",
+  "editor.show_timeline": "显示时间线",
+  "editor.show_summary": "显示统计",
+  "editor.show_actions": "显示操作按钮",
+  
+  "weekday.1": "周一",
+  "weekday.2": "周二",
+  "weekday.3": "周三",
+  "weekday.4": "周四",
+  "weekday.5": "周五",
+  "weekday.6": "周六",
+  "weekday.7": "周日",
+  
+  "date.format": "{month}月{day}日 {weekday}",
+  
+  "timeline.empty": "暂无喂食计划",
+  
+  "default.plan_name": "早餐",
+  "default.device_name": "小佩喂食器",
+  
+  "placeholder.name": "名称"
+}

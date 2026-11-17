@@ -1,156 +1,16 @@
 # HACS 发布指南
 
-## 当前状态
+`petkit-feeder` 统一发布 Home Assistant 集成和 Lovelace 卡片。HACS 通过仓库根目录的 `hacs.json` 安装 `petkit_feeder.zip`。
 
-你的项目已具备发布集成到 HACS 的基本条件。
+## 发布新版
 
-### 已有的文件
+1. 有需要随 HACS 分发的集成或卡片改动时，更新 `custom_components/petkit_feeder/manifest.json` 中的 `version`。
+2. 将改动合入 `main`。GitHub Actions 安装锁定的前端依赖、构建卡片，并运行 HACS 和 Hassfest 校验。
+3. 校验通过后，CI 为新版创建 `vX.Y.Z` 标签并发布 ZIP。检查 [Releases](https://github.com/ningjx/petkit-feeder/releases) 中的 ZIP 包含 `manifest.json` 和 `www/petkit-feeder-card.js`。
 
-| 文件 | 状态 |
-|------|------|
-| `hacs.json` | ✅ 已创建 |
-| `manifest.json` | ✅ 已创建 |
-| `brand/icon.png` | ✅ 已创建 |
-| `README.md` | ✅ 已创建 |
+维护者也可以推送与 `manifest.json` 版本对应的标签来发版。若标签创建后发布失败，可以复跑该 workflow，继续使用原标签和提交。
 
----
+## HACS 安装和收录
 
-## 发布前准备
-
-### 1. 更新 manifest.json
-
-已在 `manifest.json` 中配置：
-
-```json
-{
-  "domain": "petkit_feeder",
-  "name": "小佩喂食器",
-  "codeowners": ["@ningjx"],
-  "config_flow": true,
-  "documentation": "https://github.com/ningjx/petkit-feeder",
-  "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/ningjx/petkit-feeder/issues",
-  "requirements": ["m3u8>=3.0.0"],
-  "version": "1.0.0"
-}
-```
-
-### 2. GitHub 仓库设置
-
-在 GitHub 仓库页面：
-
-1. **添加描述**（About → Description）
-   ```
-   小佩智能喂食器 Home Assistant 集成
-   ```
-
-2. **添加 Topics**（About → Topics）
-   ```
-   home-assistant, homeassistant, petkit, feeder, hacs, custom-component
-   ```
-
-3. **创建 License 文件**
-   - Settings → Community standards → Add LICENSE
-   - 选择 MIT License
-
-### 3. 发布 Release
-
-```bash
-# 打标签
-git tag v1.0.0
-
-# 推送标签
-git push origin v1.0.0
-```
-
-然后在 GitHub：
-- Releases → Draft a new release
-- 选择标签 `v1.0.0`
-- 填写 Release title：`v1.0.0`
-- 填写描述：
-  ```
-  ## 新功能
-  - 喂食计划管理
-  - 喂食历史记录
-  - 手动喂食
-  - Lovelace 卡片
-  ```
-
----
-
-## 提交到 HACS
-
-### 方法 1：官方商店（推荐）
-
-1. Fork [hacs/integration](https://github.com/hacs/integration)
-2. 编辑 `custom_components_list.json`，添加仓库：
-   ```json
-   "ningjx/petkit-feeder"
-   ```
-3. 创建 Pull Request
-
-### 方法 2：用户手动添加
-
-用户在 HACS 中：
-1. HACS → 集成 → 探索与下载仓库
-2. 点击右上角 "..."
-3. 选择 "自定义仓库"
-4. 输入仓库地址：`https://github.com/ningjx/petkit-feeder`
-5. 类别选择 "集成"
-6. 点击 "添加"
-
----
-
-## 卡片发布（可选）
-
-如果想把卡片也发布到 HACS，需要创建独立仓库：
-
-1. 创建新仓库，名称以 `lovelace-` 开头
-   ```
-   lovelace-petkit-feeder-card
-   ```
-
-2. 目录结构：
-   ```
-   lovelace-petkit-feeder-card/
-   ├── dist/
-   │   └── petkit-feeder-card.js  # 构建后的 JS 文件
-   ├── README.md
-   └── hacs.json
-   ```
-
-3. `hacs.json`：
-   ```json
-   {
-     "name": "小佩喂食器卡片",
-     "filename": "petkit-feeder-card.js",
-     "content_in_root": false
-   }
-   ```
-
----
-
-## 发布流程总结
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  1. 更新 manifest.json（GitHub URL）                        │
-│  2. GitHub 仓库添加描述和 Topics                            │
-│  3. 添加 LICENSE 文件                                       │
-│  4. 创建 Release (git tag + GitHub Release)                 │
-│  5. 提交到 hacs/integration 或让用户手动添加                 │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 检查清单
-
-- [ ] manifest.json 的 documentation 和 issue_tracker 是正确 URL
-- [ ] GitHub 仓库有描述
-- [ ] GitHub 仓库有 Topics
-- [ ] 有 LICENSE 文件
-- [ ] 发布了第一个 Release
-- [ ] hacs.json 在仓库根目录
-
-完成以上步骤后，你的集成就可以通过 HACS 安装了。
+- 在 HACS 的「自定义仓库」里添加 `https://github.com/ningjx/petkit-feeder`，类别选择「集成」。安装后重启 Home Assistant，再添加集成和卡片。详见 [安装说明](../README.md#安装)。
+- HACS 默认收录入口为 `hacs/default` 的 `integration` 清单。主仓库的收录讨论在 [hacs/default#6766](https://github.com/hacs/default/pull/6766)。

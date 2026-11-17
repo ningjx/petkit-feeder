@@ -31,7 +31,7 @@ function Show-Help {
 用法：.\deploy.ps1 [选项]
 
 选项:
-    -Force      强制重新构建（清除 node_modules 和 dist）
+    -Force      按锁文件重新安装依赖并构建
     -Help       显示帮助信息
 
 示例:
@@ -56,7 +56,8 @@ function Build-Frontend {
     $scriptDir = $PSScriptRoot
     $projectRoot = Split-Path $scriptDir -Parent
     $cardDir = Join-Path $projectRoot "petkit_feeder_card"
-    $distDir = Join-Path $cardDir "dist"
+    $buildDir = if ($env:BUILD_DIR) { $env:BUILD_DIR } else { "dist" }
+    $distDir = if ([System.IO.Path]::IsPathRooted($buildDir)) { $buildDir } else { Join-Path $cardDir $buildDir }
     
     # 检查目录是否存在
     if (-not (Test-Path $cardDir)) {
@@ -67,16 +68,8 @@ function Build-Frontend {
     Push-Location $cardDir
     
     try {
-        # 强制构建时清理
-        if ($Force) {
-            Write-Info "清理构建缓存..."
-            if (Test-Path "node_modules") { Remove-Item -Recurse -Force "node_modules" }
-            if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
-            if (Test-Path "package-lock.json") { Remove-Item -Force "package-lock.json" }
-        }
-        
         # 检查 npm 是否可用
-        $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+        $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
         if (-not $npmCmd) {
             Write-Error "未找到 npm，请先安装 Node.js"
             Write-Info "下载地址: https://nodejs.org/"
@@ -86,7 +79,7 @@ function Build-Frontend {
         # 安装依赖
         if (-not (Test-Path "node_modules") -or $Force) {
             Write-Info "安装依赖..."
-            npm install --legacy-peer-deps
+            & $npmCmd ci --ignore-scripts
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "依赖安装失败"
                 return $false
@@ -95,7 +88,7 @@ function Build-Frontend {
         
         # 构建
         Write-Info "执行构建..."
-        npm run build
+        & $npmCmd run build
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error "构建失败"

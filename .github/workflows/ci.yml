@@ -26,7 +26,6 @@ jobs:
       - name: Checkout
         uses: "actions/checkout@v4"
         with:
-          submodules: true
           persist-credentials: false
 
       - name: Set up Node.js
@@ -38,10 +37,8 @@ jobs:
 
       - name: Build Lovelace card
         working-directory: petkit_feeder_card
-        env:
-          BUILD_DIR: tmp
         run: |
-          npm ci --ignore-scripts --registry=https://registry.npmjs.org/ --replace-registry-host=registry.npmmirror.com
+          npm ci --ignore-scripts
           npm run build
 
       - name: Bundle card and create release ZIP
@@ -54,7 +51,7 @@ jobs:
           import shutil
 
           component = Path("custom_components/petkit_feeder")
-          bundle = Path("petkit_feeder_card/tmp/petkit-feeder-card.js")
+          bundle = Path("petkit_feeder_card/dist/petkit-feeder-card.js")
           if not bundle.is_file() or bundle.stat().st_size == 0:
               raise SystemExit("The Lovelace card build did not produce a bundle")
 

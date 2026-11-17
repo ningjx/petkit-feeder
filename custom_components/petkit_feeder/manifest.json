@@ -2,6 +2,7 @@
   "domain": "petkit_feeder",
   "name": "Petkit Feeder",
   "after_dependencies": ["lovelace"],
+  "categories": ["pets"],
   "codeowners": ["@ningjx"],
   "config_flow": true,
   "dependencies": ["http"],

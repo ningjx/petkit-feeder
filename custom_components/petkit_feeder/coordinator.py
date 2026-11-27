@@ -7,12 +7,13 @@ import json
 import logging
 import socket
 from datetime import datetime, timedelta, timezone
+from inspect import signature
 from pathlib import Path
 from typing import Any
 import types
 
 import aiohttp
-from homeassistant.config_entries import ConfigEntryAuthFailed
+from homeassistant.config_entries import ConfigEntry, ConfigEntryAuthFailed
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from .pypetkitapi.client import PetKitClient
@@ -34,6 +35,7 @@ from .utils.timezone import get_timezone_offset
 from .devices import DeviceFactory, PetkitDevice
 
 _LOGGER = logging.getLogger(__name__)
+_ACCEPTS_CONFIG_ENTRY = "config_entry" in signature(DataUpdateCoordinator.__init__).parameters
 
 
 class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
@@ -42,6 +44,7 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(
         self,
         hass: HomeAssistant,
+        entry: ConfigEntry,
         username: str,
         password: str,
         device_id: str,
@@ -87,6 +90,8 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             logger=_LOGGER,
             name=DOMAIN,
             update_interval=update_interval,
+            # Older HA versions obtain the entry from the setup context.
+            **({"config_entry": entry} if _ACCEPTS_CONFIG_ENTRY else {}),
         )
 
     def _load_version(self) -> str:

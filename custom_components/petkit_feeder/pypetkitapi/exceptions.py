@@ -19,11 +19,15 @@ class PetkitSessionError(PypetkitError):
     """Class for PyPetkit connection exceptions."""
 
 
-class PetkitSessionExpiredError(PypetkitError):
-    """Class for PyPetkit connection exceptions."""
+class PetkitAuthenticationError(PypetkitError):
+    """Class for PyPetkit authentication exceptions."""
 
 
-class PetkitAuthenticationUnregisteredEmailError(PypetkitError):
+class PetkitSessionExpiredError(PetkitAuthenticationError):
+    """PetKit rejected the current session."""
+
+
+class PetkitAuthenticationUnregisteredEmailError(PetkitAuthenticationError):
     """Exception raised when the email is not registered with Petkit."""
 
     def __init__(self):
@@ -51,7 +55,3 @@ class PetkitInvalidHTTPResponseCodeError(PypetkitError):
 
 class PetkitInvalidResponseFormat(PypetkitError):
     """Class for PyPetkit invalid Response Format exceptions."""
-
-
-class PetkitAuthenticationError(PypetkitError):
-    """Class for PyPetkit authentication exceptions."""

@@ -40,6 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     coordinator = PetkitDataUpdateCoordinator(
         hass,
+        entry=entry,
         username=entry.data["username"],
         password=entry.data["password"],
         device_id=entry.data["device_id"],
@@ -48,6 +49,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         refresh_interval=entry.options.get("refresh_interval", 300),
     )
 
+    entry.async_on_unload(coordinator.cleanup)
     await coordinator.async_config_entry_first_refresh()
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
@@ -70,8 +72,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        coordinator = hass.data[DOMAIN].pop(entry.entry_id)
-        await coordinator.cleanup()
+        hass.data[DOMAIN].pop(entry.entry_id)
 
         # 所有配置条目都卸载后，注销服务
         if not hass.data[DOMAIN]:

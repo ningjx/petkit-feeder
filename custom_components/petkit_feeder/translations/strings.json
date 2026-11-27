@@ -18,6 +18,13 @@
           }
         }
       },
+      "reauth_confirm": {
+        "title": "Reconnect to PetKit",
+        "description": "Enter the current PetKit password for {username}.",
+        "data": {
+          "password": "Password"
+        }
+      },
       "device": {
         "title": "Select Device",
         "description": "Found {device_count} feeder devices, please select the device to add",
@@ -33,6 +40,8 @@
       "unknown": "Unknown error occurred"
     },
     "abort": {
+      "reauth_successful": "PetKit credentials updated.",
+      "reauth_entry_missing": "This configuration entry has been removed.",
       "already_configured": "Device already configured"
     }
   },

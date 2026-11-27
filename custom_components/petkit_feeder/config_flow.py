@@ -3,12 +3,23 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
+from typing import Any
+
 import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import callback
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
+
+from . import async_update_options
 from .pypetkitapi.client import PetKitClient
 from .pypetkitapi.exceptions import PetkitAuthenticationError, PypetkitError
 from .pypetkitapi.feeder_container import Feeder
@@ -28,6 +39,22 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+async def _async_login(
+    session: aiohttp.ClientSession, username: str, password: str, region: str
+) -> PetKitClient:
+    """Log in to the PetKit server for this account's region."""
+    client = PetKitClient(
+        username=username,
+        password=password,
+        region=region,
+        timezone="Asia/Shanghai",
+        locale=REGION_LOCALE_MAP.get(region, DEFAULT_LOCALE),
+        session=session,
+    )
+    await client.login()
+    return client
 
 
 class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -53,19 +80,10 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 # 创建临时 session 用于登录
                 region = user_input.get("region", "CN")
-                locale = REGION_LOCALE_MAP.get(region, DEFAULT_LOCALE)
                 async with aiohttp.ClientSession() as session:
-                    client = PetKitClient(
-                        username=user_input["username"],
-                        password=user_input["password"],
-                        region=region,
-                        timezone="Asia/Shanghai",
-                        locale=locale,
-                        session=session,
+                    client = await _async_login(
+                        session, user_input["username"], user_input["password"], region
                     )
-                    
-                    # 登录
-                    await client.login()
                     
                     # 获取设备列表
                     await client.get_devices_data()
@@ -121,6 +139,62 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                 }
             ),
+            errors=errors,
+        )
+
+    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
+        """Start the repair for the entry that reported an authentication failure."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Verify the password against PetKit before saving it to the original entry."""
+        entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+        if entry is None:
+            return self.async_abort(reason="reauth_entry_missing")
+
+        username = entry.data["username"]
+        errors = {}
+        if user_input is not None:
+            password = user_input["password"]
+            try:
+                async with aiohttp.ClientSession() as session:
+                    await _async_login(
+                        session, username, password, entry.data.get("region", "CN")
+                    )
+            except PetkitAuthenticationError:
+                errors["base"] = "invalid_auth"
+            except (PypetkitError, aiohttp.ClientError, TimeoutError):
+                errors["base"] = "connection_failed"
+            except Exception:
+                _LOGGER.exception("Unexpected error validating PetKit credentials")
+                errors["base"] = "unknown"
+            else:
+                # A loaded entry's update listener can run during async_update_entry.
+                listener_will_reload = (
+                    password != entry.data["password"]
+                    and async_update_options in entry.update_listeners
+                )
+                self.hass.config_entries.async_update_entry(
+                    entry, data={**entry.data, "password": password}
+                )
+                if not listener_will_reload:
+                    self.hass.async_create_task(
+                        self.hass.config_entries.async_reload(entry.entry_id)
+                    )
+                return self.async_abort(reason="reauth_successful")
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("password"): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                    ),
+                }
+            ),
+            description_placeholders={"username": username},
             errors=errors,
         )
 

@@ -18,6 +18,13 @@
           }
         }
       },
+      "reauth_confirm": {
+        "title": "重新登录小佩账号",
+        "description": "请输入小佩账号 {username} 的当前密码。",
+        "data": {
+          "password": "密码"
+        }
+      },
       "device": {
         "title": "选择设备",
         "description": "找到 {device_count} 个喂食器设备，请选择要添加的设备",
@@ -33,6 +40,8 @@
       "unknown": "发生未知错误"
     },
     "abort": {
+      "reauth_successful": "小佩账号认证成功。",
+      "reauth_entry_missing": "此配置条目已被移除。",
       "already_configured": "设备已配置"
     }
   },

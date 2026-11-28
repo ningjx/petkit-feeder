@@ -12,6 +12,10 @@ from .const import DOMAIN
 from .coordinator import PetkitDataUpdateCoordinator
 
 TO_REDACT = {
+    "title",
+    "unique_id",
+    "user_name",
+    "user_id",
     "password",
     "username",
     "token",
@@ -28,7 +32,7 @@ async def async_get_config_entry_diagnostics(
     coordinator: PetkitDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     data: dict[str, Any] = {
-        "entry": async_redact_data(entry.as_dict(), TO_REDACT),
+        "entry": entry.as_dict(),
         "coordinator_data": _get_coordinator_data(coordinator),
         "device_info": _get_device_info(coordinator),
     }

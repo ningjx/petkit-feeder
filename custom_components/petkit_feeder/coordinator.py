@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import socket
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, tzinfo
 from inspect import signature
-from pathlib import Path
 from typing import Any
 import types
 
@@ -24,14 +22,11 @@ from .const import (
     UPDATE_INTERVAL,
     REFRESH_MODE_AUTO,
     REFRESH_MODE_MANUAL,
-    REGION_TIMEZONE_MAP,
-    DEFAULT_TIMEZONE,
     REGION_LOCALE_MAP,
     DEFAULT_LOCALE,
     PLAN_REFRESH_DELAY,
 )
 from .coordinators.rate_limiter import RateLimiter
-from .utils.timezone import get_timezone_offset
 from .devices import DeviceFactory, PetkitDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,6 +40,8 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
+        version: str,
+        time_zone: tzinfo,
         username: str,
         password: str,
         device_id: str,
@@ -62,14 +59,12 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         self._refresh_interval = refresh_interval
         self._api: PetKitClient | None = None
         self._feed_amount: int = 10
-        self._timezone: float = 8.0
-        self._timezone_str: str = "Asia/Shanghai"
+        self._timezone = time_zone
         self._locale: str = "zh_CN"
         self._plan_refresh_unsub: Any = None
         self._device: PetkitDevice | None = None
-        self._version: str = self._load_version()
+        self._version = version
 
-        self._init_timezone()
         self._init_locale()
         
         # aiohttp 会话
@@ -94,64 +89,10 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             **({"config_entry": entry} if _ACCEPTS_CONFIG_ENTRY else {}),
         )
 
-    def _load_version(self) -> str:
-        """从 manifest.json 读取版本号."""
-        manifest_path = Path(__file__).parent / "manifest.json"
-        try:
-            with open(manifest_path, "r", encoding="utf-8") as f:
-                manifest = json.load(f)
-                return manifest.get("version", "unknown")
-        except Exception as err:
-            _LOGGER.warning("无法读取 manifest.json: %s", err)
-            return "unknown"
-
     @property
     def version(self) -> str:
         """返回集成版本."""
         return self._version
-
-    def _init_timezone(self) -> None:
-        """初始化时区设置（自动获取，优先 HA 系统时区）."""
-        # 第一优先级：HA 系统时区
-        ha_timezone = self.hass.config.time_zone if self.hass else None
-        
-        if ha_timezone:
-            self._timezone_str = ha_timezone
-            self._timezone = get_timezone_offset(ha_timezone)
-            
-            # 详细日志
-            _LOGGER.info(
-                "=== 时区初始化 ===\n"
-                "来源：HA 系统时区\n"
-                "时区名称：%s\n"
-                "UTC 偏移：UTC%s%.1f\n"
-                "当前时间：%s",
-                ha_timezone,
-                "+" if self._timezone >= 0 else "",
-                self._timezone,
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            )
-            return
-        
-        # 第二优先级：根据地区分配默认时区
-        region_timezone = REGION_TIMEZONE_MAP.get(self._region, DEFAULT_TIMEZONE)
-        self._timezone_str = region_timezone
-        self._timezone = get_timezone_offset(region_timezone)
-        
-        # 详细日志
-        _LOGGER.info(
-            "=== 时区初始化 ===\n"
-            "来源：地区默认时区（HA 系统时区未设置）\n"
-            "用户地区：%s\n"
-            "时区名称：%s\n"
-            "UTC 偏移：UTC%s%.1f\n"
-            "当前时间：%s",
-            self._region,
-            region_timezone,
-            "+" if self._timezone >= 0 else "",
-            self._timezone,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        )
 
     def _init_locale(self) -> None:
         """初始化语言设置（根据区域）."""
@@ -175,7 +116,7 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             username=self._username,
             password=self._password,
             region=self._region,
-            timezone=self.hass.config.time_zone or "Asia/Shanghai",
+            timezone=str(self._timezone),
             locale=self._locale,
             session=self._session,
         )
@@ -241,13 +182,12 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
                 "系统本地时间: %s\n"
                 "UTC 时间: %s\n"
                 "系统时区偏移: %s\n"
-                "设置的时区: UTC%s%d\n"
+                "设置的时区: %s\n"
                 "当前时区日期: %s\n"
                 "当前时区时间: %s",
                 local_now.strftime("%Y-%m-%d %H:%M:%S"),
                 utc_now.strftime("%Y-%m-%d %H:%M:%S"),
                 local_tz_offset,
-                "+" if self._timezone >= 0 else "",
                 self._timezone,
                 self.get_current_date_str(),
                 self.get_current_datetime().strftime("%Y-%m-%d %H:%M:%S"),
@@ -465,27 +405,8 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
         return self._device
 
     def get_current_datetime(self) -> datetime:
-        """获取当前时区的日期时间.
-        
-        Returns:
-            当前时区的 datetime 对象
-        """
-        from datetime import timezone, timedelta
-        
-        # 创建时区对象
-        tz = timezone(timedelta(hours=self._timezone))
-        
-        # 获取当前时间并转换到目标时区
-        now = datetime.now(tz)
-        
-        _LOGGER.debug(
-            "当前时区时间: %s (UTC%s%d)",
-            now.strftime("%Y-%m-%d %H:%M:%S"),
-            "+" if self._timezone >= 0 else "",
-            self._timezone
-        )
-        
-        return now
+        """获取喂食器所在时区的当前时间."""
+        return datetime.now(self._timezone)
 
     def get_current_date_str(self) -> str:
         """获取当前时区的日期字符串.
@@ -509,16 +430,12 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
             return None
         
         try:
-            import zoneinfo
-            from datetime import datetime
-            
             # 解析 UTC 时间
             utc_str = utc_datetime_str.replace("+0000", "+00:00").replace("-0000", "-00:00")
             utc_dt = datetime.fromisoformat(utc_str)
             
             # 转换到目标时区
-            target_tz = zoneinfo.ZoneInfo(self._timezone_str)
-            target_dt = utc_dt.astimezone(target_tz)
+            target_dt = utc_dt.astimezone(self._timezone)
             
             # 格式化输出
             result = target_dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + target_dt.strftime("%z")
@@ -527,7 +444,7 @@ class PetkitDataUpdateCoordinator(DataUpdateCoordinator):
                 "时间转换：%s (UTC) → %s (%s)",
                 utc_datetime_str,
                 result,
-                self._timezone_str
+                self._timezone
             )
             
             return result

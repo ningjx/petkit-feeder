@@ -9,11 +9,13 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.loader import async_get_integration
 
 from .card import async_setup_card
 from .const import DOMAIN
 from .coordinator import PetkitDataUpdateCoordinator
 from .services import FeedingService, SERVICE_SCHEMAS
+from .utils.timezone import async_get_feeder_time_zone
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,13 +40,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """设置集成入口."""
     hass.data.setdefault(DOMAIN, {})
 
+    region = entry.data.get("region", "CN")
+    integration = await async_get_integration(hass, DOMAIN)
+    time_zone = await async_get_feeder_time_zone(hass, region)
     coordinator = PetkitDataUpdateCoordinator(
         hass,
         entry=entry,
+        version=str(integration.version or "unknown"),
+        time_zone=time_zone,
         username=entry.data["username"],
         password=entry.data["password"],
         device_id=entry.data["device_id"],
-        region=entry.data.get("region", "CN"),
+        region=region,
         refresh_mode=entry.options.get("refresh_mode", "auto"),
         refresh_interval=entry.options.get("refresh_interval", 300),
     )

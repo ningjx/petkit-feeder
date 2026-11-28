@@ -122,7 +122,6 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # 获取之前输入的值（用于错误时保留表单数据）
         username = user_input.get("username", "") if user_input else ""
-        password = user_input.get("password", "") if user_input else ""
         region = user_input.get("region", "CN") if user_input else "CN"
 
         return self.async_show_form(
@@ -130,7 +129,9 @@ class PetkitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required("username", default=username): str,
-                    vol.Required("password", default=password): str,
+                    vol.Required("password"): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                    ),
                     vol.Optional("region", default=region): SelectSelector(
                         SelectSelectorConfig(
                             options=["CN", "US", "EU"],
